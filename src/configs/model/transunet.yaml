@@ -1,0 +1,5 @@
+_target_: src.model.TransUNetDetector
+input_shape: [160, 160, 160, 1]
+encoder_name: 'seresnext50'
+classifier_activation: 'softmax'
+num_classes: 3
