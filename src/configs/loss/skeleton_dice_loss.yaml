@@ -1,0 +1,4 @@
+_target_: src.loss.SkeletonDiceLoss
+num_classes: 3
+w_srec: 0.5
+w_fp: 0.3
