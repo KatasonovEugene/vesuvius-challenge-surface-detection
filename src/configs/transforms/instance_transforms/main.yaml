@@ -1,0 +1,39 @@
+train:
+  volume:
+    _target_: torch.nn.Sequential
+    _args_:
+      - _target_: src.transforms.ScaleIntensityRange
+        a_min: 0
+        a_max: 255
+        clip: True
+      - _target_: src.transforms.RandShiftIntensity
+        prob: 0.4
+        max_k: 3
+        spatial_axes: [0, 1]
+  volume@target:
+    _target_: torch.nn.Sequential
+    _args_:
+      - _target_: src.transforms.RandSpatialCrop3D
+        size: [128, 128, 128]
+      - _target_: src.transforms.RandFlip3D
+        spatial_axis: 0
+        prob: 0.5
+      - _target_: src.transforms.RandFlip3D
+        spatial_axis: 1
+        prob: 0.5
+      - _target_: src.transforms.RandFlip3D
+        spatial_axis: 2
+        prob: 0.5
+      - _target_: src.transforms.RandRotate90_3D
+        prob: 0.4
+        max_k: 3
+        spatial_axes: [0, 1]
+      
+inference:
+  volume:
+    _target_: torch.nn.Sequential
+    _args_:
+      - _target_: src.transforms.ScaleIntensityRange
+        a_min: 0
+        a_max: 255
+        clip: True

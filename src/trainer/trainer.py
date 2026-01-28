@@ -55,6 +55,39 @@ class Trainer(BaseTrainer):
             metrics.update(met.name, met(**batch))
         return batch
 
+    def transform_batch(self, batch):
+        """
+        Transforms elements in batch. Like instance transform inside the
+        BaseDataset class, but for the whole batch. Improves pipeline speed,
+        especially if used with a GPU.
+
+        Each tensor in a batch undergoes its own transform defined by the key.
+
+        Args:
+            batch (dict): dict-based batch containing the data from
+                the dataloader.
+        Returns:
+            batch (dict): dict-based batch containing the data from
+                the dataloader (possibly transformed via batch transform).
+        """
+
+        transform_type = "train" if self.is_train else "inference"
+        transforms = self.batch_transforms.get(transform_type)
+        if transforms is not None:
+            for transform_name in transforms.keys():
+                if '@' in transform_name: # transform applied for several tensors
+                    transform_names = transform_name.split('@')
+                    data_dict = {name: batch[name] for name in transform_names}
+                    transform_result = transforms[transform_name](**data_dict)
+                    for name, value in transform_result:
+                        batch[name] = value
+                else:
+                    batch[transform_name] = transforms[transform_name](
+                        batch[transform_name]
+                    )
+        return batch
+
+
     def _log_batch(self, batch_idx, batch, mode="train"):
         """
         Log data from batch. Calls self.writer.add_* to log data

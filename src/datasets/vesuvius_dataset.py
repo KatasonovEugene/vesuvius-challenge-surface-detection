@@ -42,7 +42,7 @@ class VesuviusDataset(BaseDataset):
             target_path = self.data_path / 'train_labels'
         else:
             images_path = self.data_path / 'test_images'
-        
+
         num_images = len([*images_path.iterdir()])
         if self.val_size is not None:
             num_val_images = self.val_size * num_images
@@ -68,11 +68,40 @@ class VesuviusDataset(BaseDataset):
         write_json(index, str(self.index_path))
 
         return index
-    
+
     def load_object(self, path):
         volume = tiff.imread(path)
         volume = torch.from_numpy(volume).long()
         return volume
+
+    def preprocess_data(self, instance_data):
+        """
+        Preprocess data with instance transforms.
+
+        Each tensor in a dict undergoes its own transform defined by the key.
+
+        Args:
+            instance_data (dict): dict, containing instance
+                (a single dataset element).
+        Returns:
+            instance_data (dict): dict, containing instance
+                (a single dataset element) (possibly transformed via
+                instance transform).
+        """
+
+        if self.instance_transforms is not None:
+            for transform_name in self.instance_transforms.keys():
+                if '@' in transform_name: # transform applied for several tensors
+                    transform_names = transform_name.split('@')
+                    data_dict = {name: instance_data[name] for name in transform_names}
+                    transform_result = self.instance_transforms[transform_name](**data_dict)
+                    for name, value in transform_result:
+                        instance_data[name] = value
+                else:
+                    instance_data[transform_name] = self.instance_transforms[transform_name](
+                        instance_data[transform_name]
+                    )
+        return instance_data
 
     def __getitem__(self, ind):
         item = self._index[ind]

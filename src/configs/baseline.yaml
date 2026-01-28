@@ -4,7 +4,7 @@ defaults:
   - metrics: example
   - datasets: example
   - dataloader: example
-  - transforms: example
+  - transforms: main
   - _self_
 optimizer:
   _target_: torch.optim.Adam

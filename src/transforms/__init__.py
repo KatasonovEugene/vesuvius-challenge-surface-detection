@@ -1,2 +1,6 @@
-from src.transforms.normalize import Normalize1D
-from src.transforms.scale import RandomScale1D
+from src.transforms.normalize import Normalize3D
+from src.transforms.scale import StandartScale, ScaleIntensityRange
+from src.transforms.rotate import RandRotate90_3D
+from src.transforms.flip import RandFlip3D
+from src.transforms.shift_intensity import RandShiftIntensity3D
+from src.transforms.crop import RandSpatialCrop3D
