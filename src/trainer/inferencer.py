@@ -3,8 +3,6 @@ from tqdm.auto import tqdm
 import numpy as np
 import tifffile as tiff
 import scipy.ndimage as ndi
-from skimage.morphology import remove_small_objects
-from src.utils.post_process_utils import build_anisotropic_struct_
 
 from src.metrics.tracker import MetricTracker
 from src.trainer.base_trainer import BaseTrainer
@@ -134,13 +132,12 @@ class Inferencer(BaseTrainer):
         batch_size = batch["outputs"].shape[0]
         current_id = batch_idx * batch_size
 
+        batch = self.post_process_batch(batch)
         for i in range(batch_size):
             # clone because of
             # https://github.com/pytorch/pytorch/issues/1995
 
-            sample = batch["outputs"][i].clone()
-            post_processed_sample = self.sample_post_process(sample)
-
+            post_processed_sample = batch["outputs"][i].clone()
             output_id = current_id + i
 
             if self.save_path is not None:
@@ -148,53 +145,36 @@ class Inferencer(BaseTrainer):
 
         return batch
 
+    
+    def apply_batch_transforms(self, transforms, batch):
+        if transforms is not None:
+            for transform_name in transforms.keys():
+                if '@' in transform_name: # transform applied for several tensors
+                    transform_names = transform_name.split('@')
+                    data_dict = {name: batch[name] for name in transform_names}
+                    transform_result = transforms[transform_name](**data_dict)
+                    for name, value in transform_result:
+                        batch[name] = value
+                else:
+                    batch[transform_name] = transforms[transform_name](
+                        batch[transform_name]
+                    )
+        return batch
 
-    def sample_post_process(self, volume):
+
+    def post_process_batch(self, batch):
         '''
         Applying post processing to one sample containing probabilites.
 
         Expected shape: [D, H, W, 1]
 
         Args:
-            volume (Tensor): tensor containing probabilities [0, 1] of class 1
+            outputs (Tensor): tensor containing probabilities [0, 1] of class 1
         '''
 
-        volume = volume.squeeze(-1) # [D, H, W, 1] -> [D, H, W]
-        volume = volume.cpu().numpy()
-
-        # --- Parameters ---
-
-        T_low=0.50
-        T_high=0.90
-        z_radius=1
-        xy_radius=0
-        dust_min_size=100
-
-
-        # --- Step 1: 3D Hysteresis ---
-        strong = volume >= T_high
-        weak   = volume >= T_low
-
-        if not strong.any():
-            return np.zeros_like(volume, dtype=np.uint8)
-
-        struct_hyst = ndi.generate_binary_structure(3, 3)
-        mask = ndi.binary_propagation(strong, mask=weak, structure=struct_hyst)
-
-        if not mask.any():
-            return np.zeros_like(volume, dtype=np.uint8)
-
-        # --- Step 2: 3D Anisotropic Closing ---
-        if z_radius > 0 or xy_radius > 0:
-            struct_close = build_anisotropic_struct_(z_radius, xy_radius)
-            if struct_close is not None:
-                mask = ndi.binary_closing(mask, structure=struct_close)
-
-        # --- Step 3: Dust Removal ---
-        if dust_min_size > 0:
-            mask = remove_small_objects(mask.astype(bool), min_size=dust_min_size)
-
-        return mask.astype(np.uint8)
+        transform_type = "postprocess"
+        transforms = self.batch_transforms.get(transform_type) if self.batch_transforms else None
+        return self.apply_batch_transforms(transforms, batch)
 
 
     def transform_batch(self, batch):
@@ -215,19 +195,7 @@ class Inferencer(BaseTrainer):
 
         transform_type = "train" if self.is_train else "inference"
         transforms = self.batch_transforms.get(transform_type) if self.batch_transforms else None
-        if transforms is not None:
-            for transform_name in transforms.keys():
-                if '@' in transform_name: # transform applied for several tensors
-                    transform_names = transform_name.split('@')
-                    data_dict = {name: batch[name] for name in transform_names}
-                    transform_result = transforms[transform_name](**data_dict)
-                    for name, value in transform_result:
-                        batch[name] = value
-                else:
-                    batch[transform_name] = transforms[transform_name](
-                        batch[transform_name]
-                    )
-        return batch
+        return self.apply_batch_transforms(transforms, batch)
 
     def _inference_part(self, part, dataloader):
         """
