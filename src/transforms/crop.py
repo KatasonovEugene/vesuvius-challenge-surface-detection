@@ -16,7 +16,7 @@ class RandSpatialCrop3D(nn.Module):
         """
         super().__init__()
 
-        self.size = torch.tensor(size)
+        self.size = size
 
     def forward(self, volume, target):
         """
@@ -39,10 +39,9 @@ class RandSpatialCrop3D(nn.Module):
                 torch.randint(low=0, high=max(1, volume.shape[1] - self.size[1] + 1), size=(1,)),
                 torch.randint(low=0, high=max(1, volume.shape[2] - self.size[2] + 1), size=(1,))
             ], dim=0)
-            end = begin + self.size
 
-            volume = volume[begin[0]:end[0], begin[1]:end[1], begin[2]:end[2]]
-            target = target[begin[0]:end[0], begin[1]:end[1], begin[2]:end[2]]
+            volume = volume[begin[0]:begin[0]+self.size[0], begin[1]:begin[1]+self.size[1], begin[2]:begin[2]+self.size[2]]
+            target = target[begin[0]:begin[0]+self.size[0], begin[1]:begin[1]+self.size[1], begin[2]:begin[2]+self.size[2]]
         else:
             begin = torch.cat([
                 torch.randint(low=0, high=max(1, volume.shape[1] - self.size[0] + 1), size=(volume.shape[0],)).unsqueeze(1),
@@ -52,6 +51,7 @@ class RandSpatialCrop3D(nn.Module):
 
             # end = begin + self.size.unsqueeze(0)
             # volume[i] = volume[i, begin[i][0]:end[i][0], begin[i][1]:end[i][1], begin[i][2]:end[i][2]]
+            # target = ...
 
             dz = torch.arange(self.size[0])[None, :, None, None]
             dy = torch.arange(self.size[1])[None, None, :, None]
@@ -64,5 +64,6 @@ class RandSpatialCrop3D(nn.Module):
             b_idx = torch.arange(volume.shape[0])[:, None, None, None]
 
             volume = volume[b_idx, z_idx, y_idx, x_idx]
+            target = target[b_idx, z_idx, y_idx, x_idx]
 
         return {'volume': volume, 'target': target}

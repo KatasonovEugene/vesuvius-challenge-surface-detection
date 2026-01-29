@@ -49,7 +49,7 @@ class RandRotate90_3D(nn.Module):
             raise RuntimeError(f'RandRotate90_3D: input shape was not expected; input shape: {volume.shape}; expected shape: [D, H, W] or [B, D, H, W]')
 
         if volume.dim() == 3:
-            apply_transform = torch.bernoulli(torch.tensor([self.probability])).item()
+            apply_transform = torch.bernoulli(torch.tensor([self.prob])).item()
 
             if apply_transform:
                 koef = int(torch.randint(1, self.max_k + 1, size=(1,)).item())
@@ -59,7 +59,10 @@ class RandRotate90_3D(nn.Module):
 
             return {'volume': volume, 'target': target}
         else:
-            apply_transform = torch.bernoulli(torch.full(volume.shape[0], self.probability))
+            apply_transform = torch.bernoulli(
+                torch.full(size=(volume.shape[0],), fill_value=self.prob)
+            )
+
             koefs = torch.randint(1, self.max_k + 1, size=(volume.shape[0],))
             koefs = apply_transform * koefs
 
@@ -68,8 +71,8 @@ class RandRotate90_3D(nn.Module):
 
             for rotate_num in range(1, self.max_k + 1):
                 apply = (koefs == rotate_num)
-                volume = torch.flip(volume, dims=[self.spatial_axis])
-                target = torch.flip(target, dims=[self.spatial_axis])
+                volume = self.rotate90(volume)
+                target = self.rotate90(target)
                 volume_cloned[apply] = volume[apply]
                 target_cloned[apply] = target[apply]
 

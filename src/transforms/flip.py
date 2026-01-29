@@ -37,7 +37,7 @@ class RandFlip3D(nn.Module):
             raise RuntimeError(f'RandFlip3D: input shape was not expected; input shape: {volume.shape}; expected shape: [D, H, W] or [B, D, H, W]')
 
         if volume.dim() == 3:
-            apply_transform = torch.bernoulli(torch.tensor([self.probability])).item()
+            apply_transform = torch.bernoulli(torch.tensor([self.prob])).item()
 
             if apply_transform:
                 volume = torch.flip(volume, dims=[self.spatial_axis])
@@ -45,7 +45,9 @@ class RandFlip3D(nn.Module):
 
             return {'volume': volume, 'target': target}
         else:
-            apply_transform = torch.bernoulli(torch.full(volume.shape[0], self.probability))
+            apply_transform = torch.bernoulli(
+                torch.full(size=(volume.shape[0],), fill_value=self.prob)
+            )
 
             flipped_volume = torch.flip(volume, dims=[self.spatial_axis])
             flipped_target = torch.flip(target, dims=[self.spatial_axis])

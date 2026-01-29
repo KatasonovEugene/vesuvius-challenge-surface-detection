@@ -36,7 +36,7 @@ class RandShiftIntensity3D(nn.Module):
             raise RuntimeError(f'RandShiftIntensity3D: input shape was not expected; input shape: {volume.shape}; expected shape: [D, H, W] or [B, D, H, W]')
 
         if volume.dim() == 3:
-            apply_transform = torch.bernoulli(torch.tensor([self.probability])).item()
+            apply_transform = torch.bernoulli(torch.tensor([self.prob])).item()
 
             if apply_transform:
                 delta = torch.normal(mean=0.0, std=self.offsets, size=[1])
@@ -44,7 +44,9 @@ class RandShiftIntensity3D(nn.Module):
 
             return {'volume': volume}
         else:
-            apply_transform = torch.bernoulli(torch.full(volume.shape[0], self.probability))
+            apply_transform = torch.bernoulli(
+                torch.full(size=(volume.shape[0],), fill_value=self.prob)
+            )
             delta = torch.normal(mean=0.0, std=self.offsets, size=[volume.shape[0]])
 
             shifted_volume = volume + delta
