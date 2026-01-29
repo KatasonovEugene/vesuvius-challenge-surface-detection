@@ -1,5 +1,10 @@
 import torch
 from tqdm.auto import tqdm
+import numpy as np
+import tifffile as tiff
+import scipy.ndimage as ndi
+from skimage.morphology import remove_small_objects
+from src.utils.post_process_utils import build_anisotropic_struct_
 
 from src.metrics.tracker import MetricTracker
 from src.trainer.base_trainer import BaseTrainer
@@ -123,33 +128,105 @@ class Inferencer(BaseTrainer):
         batch.update(outputs)
 
         if metrics is not None:
-            for met in self.metrics["inference"]:
+            for met in metrics["inference"]:
                 metrics.update(met.name, met(**batch))
 
-        # Some saving logic. This is an example
-        # Use if you need to save predictions on disk
-
-        batch_size = batch["logits"].shape[0]
+        batch_size = batch["outputs"].shape[0]
         current_id = batch_idx * batch_size
 
         for i in range(batch_size):
             # clone because of
             # https://github.com/pytorch/pytorch/issues/1995
-            logits = batch["logits"][i].clone()
-            label = batch["labels"][i].clone()
-            pred_label = logits.argmax(dim=-1)
+
+            sample = batch["outputs"][i].clone()
+            post_processed_sample = self.sample_post_process(sample)
 
             output_id = current_id + i
 
-            output = {
-                "pred_label": pred_label,
-                "label": label,
-            }
-
             if self.save_path is not None:
-                # you can use safetensors or other lib here
-                torch.save(output, self.save_path / part / f"output_{output_id}.pth")
+                tiff.imsave(self.save_path / part / f"{output_id}.tif", post_processed_sample)
 
+        return batch
+
+
+    def sample_post_process(self, volume):
+        '''
+        Applying post processing to one sample containing probabilites.
+
+        Expected shape: [D, H, W, 1]
+
+        Args:
+            volume (Tensor): tensor containing probabilities [0, 1] of class 1
+        '''
+
+        volume = volume.squeeze(-1) # [D, H, W, 1] -> [D, H, W]
+        volume = volume.cpu().numpy()
+
+        # --- Parameters ---
+
+        T_low=0.50
+        T_high=0.90
+        z_radius=1
+        xy_radius=0
+        dust_min_size=100
+
+
+        # --- Step 1: 3D Hysteresis ---
+        strong = volume >= T_high
+        weak   = volume >= T_low
+
+        if not strong.any():
+            return np.zeros_like(volume, dtype=np.uint8)
+
+        struct_hyst = ndi.generate_binary_structure(3, 3)
+        mask = ndi.binary_propagation(strong, mask=weak, structure=struct_hyst)
+
+        if not mask.any():
+            return np.zeros_like(volume, dtype=np.uint8)
+
+        # --- Step 2: 3D Anisotropic Closing ---
+        if z_radius > 0 or xy_radius > 0:
+            struct_close = build_anisotropic_struct_(z_radius, xy_radius)
+            if struct_close is not None:
+                mask = ndi.binary_closing(mask, structure=struct_close)
+
+        # --- Step 3: Dust Removal ---
+        if dust_min_size > 0:
+            mask = remove_small_objects(mask.astype(bool), min_size=dust_min_size)
+
+        return mask.astype(np.uint8)
+
+
+    def transform_batch(self, batch):
+        """
+        Transforms elements in batch. Like instance transform inside the
+        BaseDataset class, but for the whole batch. Improves pipeline speed,
+        especially if used with a GPU.
+
+        Each tensor in a batch undergoes its own transform defined by the key.
+
+        Args:
+            batch (dict): dict-based batch containing the data from
+                the dataloader.
+        Returns:
+            batch (dict): dict-based batch containing the data from
+                the dataloader (possibly transformed via batch transform).
+        """
+
+        transform_type = "train" if self.is_train else "inference"
+        transforms = self.batch_transforms.get(transform_type) if self.batch_transforms else None
+        if transforms is not None:
+            for transform_name in transforms.keys():
+                if '@' in transform_name: # transform applied for several tensors
+                    transform_names = transform_name.split('@')
+                    data_dict = {name: batch[name] for name in transform_names}
+                    transform_result = transforms[transform_name](**data_dict)
+                    for name, value in transform_result:
+                        batch[name] = value
+                else:
+                    batch[transform_name] = transforms[transform_name](
+                        batch[transform_name]
+                    )
         return batch
 
     def _inference_part(self, part, dataloader):
@@ -166,7 +243,8 @@ class Inferencer(BaseTrainer):
         self.is_train = False
         self.model.eval()
 
-        self.evaluation_metrics.reset()
+        if self.evaluation_metrics is not None:
+            self.evaluation_metrics.reset()
 
         # create Save dir
         if self.save_path is not None:
@@ -185,4 +263,4 @@ class Inferencer(BaseTrainer):
                     metrics=self.evaluation_metrics,
                 )
 
-        return self.evaluation_metrics.result()
+        return self.evaluation_metrics.result() if self.evaluation_metrics else None

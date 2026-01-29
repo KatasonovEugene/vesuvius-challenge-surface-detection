@@ -1,13 +1,13 @@
 defaults:
-  - model: baseline
-  - metrics: example
-  - datasets: example_eval # we do not want to run inference on training data
-  - dataloader: example
-  - transforms: example
+  - model: transunet
+  - metrics: main # maybe null ?
+  - datasets: test # we do not want to run inference on training data
+  - dataloader: default
+  - transforms: main
   - _self_
 inferencer:
-  device_tensors: ["data_object", "labels"] # which tensors should be on device (ex. GPU)
-  device: auto # device name or "auto"
-  save_path: "example" # any name here, can be a dataset name
+  device_tensors: ["volume"] # which tensors should be on device (ex. GPU)
+  device: auto
+  save_path: "submission_dir"
   seed: 1
   from_pretrained: "saved/model_best.pth" # path to the pretrained model
