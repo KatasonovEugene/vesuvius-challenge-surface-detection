@@ -1,7 +1,7 @@
 defaults:
   - model: transunet
   - writer: wandb
-  - metrics: example
+  - metrics: main
   - datasets: default
   - dataloader: default
   - transforms: main
