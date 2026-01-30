@@ -23,6 +23,5 @@ class SegResNetDetector(nn.Module):
 
     def forward(self, volume, **batch):
         volume = volume.unsqueeze(1)
-        segmented_volume = self.backbone(volume)                     # (B, 2, D, H, W)
-        segmented_volume = segmented_volume.permute(0, 2, 3, 4, 1)   # (B, D, H, W, 2)
-        return {'probs': torch.softmax(segmented_volume, axis=-1)}
+        logits = self.backbone(volume)    # (B, 2, D, H, W)
+        return {'logits': logits}

@@ -1,6 +1,6 @@
 _target_: src.model.SwinUNETRDetector
 in_channels: 1
-out_channels: 2
+out_channels: 3
 feature_size: 48
 use_v2: True
 drop_rate: 0.2

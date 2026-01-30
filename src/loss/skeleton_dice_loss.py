@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from src.loss.sparse_dice_ce_loss import SparseDiceCELoss
+from src.loss.dice_ce_loss import DiceCELoss
 
 
 class SkeletonDiceLoss(nn.Module):
@@ -15,17 +15,17 @@ class SkeletonDiceLoss(nn.Module):
         self.w_srec = w_srec
         self.w_fp = w_fp
         self.eps = 1e-6
-        self.dice_loss = SparseDiceCELoss(
-            from_logits=False,
+        self.dice_loss = DiceCELoss(
             num_classes=num_classes,
             ignore_class_ids=2,
         )
 
-    def forward(self, probs: torch.Tensor, gt_mask: torch.Tensor, gt_skel: torch.Tensor, **batch):
-        dice_loss = self.dice_loss(gt_mask.unsqueeze(-1), probs)
+    def forward(self, logits: torch.Tensor, gt_mask: torch.Tensor, gt_skel: torch.Tensor, **batch):
+        probs = torch.softmax(logits, axis=1)
+        dice_loss = self.dice_loss(gt_mask, logits, probs)
 
         dims = (1, 2, 3) 
-        pred_ink_prob = probs[..., 1]
+        pred_ink_prob = probs[:, 1]
         valid_mask = (gt_mask != 2).float()
 
         intersection = (pred_ink_prob * gt_skel * valid_mask).sum(dim=dims)

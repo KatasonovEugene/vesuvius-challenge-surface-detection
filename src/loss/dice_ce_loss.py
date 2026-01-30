@@ -2,11 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class SparseDiceCELoss(nn.Module):
+class DiceCELoss(nn.Module):
     def __init__(
         self,
         num_classes,
-        from_logits=True,
         target_class_ids=None,
         ignore_class_ids=None,
         smooth=1e-7,
@@ -17,7 +16,6 @@ class SparseDiceCELoss(nn.Module):
         super().__init__()
 
         self.num_classes = num_classes
-        self.from_logits = from_logits
         self.target_class_ids = target_class_ids
         self.ignore_class_ids = ignore_class_ids or []
         if not isinstance(self.ignore_class_ids, list):
@@ -27,20 +25,13 @@ class SparseDiceCELoss(nn.Module):
         self.ce_weight = ce_weight
         self.reduction = reduction
 
-    def forward(self, y_true, y_pred):
-        if self.from_logits:
-            probs = F.softmax(y_pred, dim=1)
-            logits = y_pred
-        else:
-            probs = y_pred
-            logits = torch.log(y_pred + self.smooth)
-
+    def forward(self, y_true, logits, probs):
         valid_mask = torch.ones_like(y_true, dtype=torch.bool)
         for ignore_id in self.ignore_class_ids:
             valid_mask &= (y_true != ignore_id)
 
         y_true_one_hot = F.one_hot(y_true.clamp(0, self.num_classes - 1), self.num_classes)
-        y_true_one_hot = y_true_one_hot.permute(0, 3, 1, 2).float()
+        y_true_one_hot = y_true_one_hot.movedim(-1, 1).float()
 
         if self.target_class_ids is not None:
             dims = self.target_class_ids
@@ -50,10 +41,12 @@ class SparseDiceCELoss(nn.Module):
             p = probs
             t = y_true_one_hot
 
+        spatial_dims = list(range(2, len(p.shape)))
+        reduction_dims = [0] + spatial_dims
+
         m = valid_mask.unsqueeze(1).expand_as(t)
-        
-        intersection = torch.sum(p * t * m, dim=(0, 2, 3))
-        union = torch.sum((p + t) * m, dim=(0, 2, 3))
+        intersection = torch.sum(p * t * m, dim=reduction_dims)
+        union = torch.sum((p + t) * m, dim=reduction_dims)
         
         dice_score = (2. * intersection + self.smooth) / (union + self.smooth)
         dice_loss = 1.0 - dice_score.mean()
