@@ -22,10 +22,12 @@ class RandSpatialCrop3D(nn.Module):
         """
         Args:
             volume (Tensor): volume tensor.
-            target (Tensor): target tensor.
+            gt_mask (Tensor): ground truth mask tensor.
+            gt_skel (Tensor): ground truth skeleton tensor.
         Returns:
             volume (Tensor): randomly cropped volume tensor.
-            target (Tensor): randomly cropped target tensor.
+            gt_mask (Tensor): randomly cropped ground truth mask tensor.
+            gt_skel (Tensor): randomly cropped ground truth skeleton tensor.
         """
 
         if volume.dim() != 4:
