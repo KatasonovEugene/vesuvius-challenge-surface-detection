@@ -5,7 +5,7 @@ from torch import nn
 class RandShiftIntensity3D(nn.Module):
     """
     Randomly Applies Shift Intensity on 3D input.
-    Expected input shape: [D, H, W] or [B, D, H, W]
+    Expected input shape: [B, D, H, W]
     """
 
     def __init__(self, offsets=0.10, prob=0.5):
@@ -32,22 +32,15 @@ class RandShiftIntensity3D(nn.Module):
             volume (Tensor): randomly intensity shifted tensor.
         """
 
-        if volume.dim() not in [3, 4]:
+        if volume.dim() != 4:
             raise RuntimeError(f'RandShiftIntensity3D: input shape was not expected; input shape: {volume.shape}; expected shape: [D, H, W] or [B, D, H, W]')
 
-        if volume.dim() == 3:
-            apply_transform = torch.bernoulli(torch.tensor([self.prob])).to(torch.bool).item()
+        apply_transform = torch.bernoulli(
+            torch.full(size=(volume.shape[0],), fill_value=self.prob)
+        ).to(torch.bool)
+        delta = torch.normal(mean=0.0, std=self.offsets, size=[volume.shape[0]])
 
-            if apply_transform:
-                delta = torch.normal(mean=0.0, std=self.offsets, size=[1])
-                volume = volume + delta
-        else:
-            apply_transform = torch.bernoulli(
-                torch.full(size=(volume.shape[0],), fill_value=self.prob)
-            ).to(torch.bool)
-            delta = torch.normal(mean=0.0, std=self.offsets, size=[volume.shape[0]])
-
-            shifted_volume = volume + delta
-            volume[apply_transform] = shifted_volume[apply_transform]
+        shifted_volume = volume + delta[:, None, None, None]
+        volume[apply_transform] = shifted_volume[apply_transform]
 
         return {'volume': volume}

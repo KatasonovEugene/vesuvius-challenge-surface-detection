@@ -6,12 +6,10 @@ tqdm
 matplotlib
 pandas
 wandb
-comet_ml
 hydra-core
-keras
-tensorflow
 scikit-image
-
+imagecodecs
+monai
 black
 isort
 pre-commit
