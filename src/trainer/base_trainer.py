@@ -364,7 +364,7 @@ class BaseTrainer:
                 the dataloader (possibly transformed via batch transform).
         """
         transform_type = "train" if self.is_train else "inference"
-        transforms = self.batch_transforms.get(transform_type)
+        transforms = self.batch_transforms.get(transform_type) if self.batch_transforms else None
         if transforms is not None:
             for transform_name in transforms.keys():
                 transform_result = transforms[transform_name](**batch)

@@ -5,7 +5,7 @@ from torch import nn
 class RandSpatialCrop3D(nn.Module):
     """
     Randomly crops 3D input.
-    Expected input shape: [D, H, W]
+    Expected input shape: [B, D, H, W]
     """
 
     def __init__(self, size):
@@ -29,7 +29,7 @@ class RandSpatialCrop3D(nn.Module):
         """
 
         if volume.dim() != 4:
-            raise RuntimeError(f'RandSpatialCrop3D: input shape was not expected; input shape: {volume.shape}; expected shape: [D, H, W] or [B, D, H, W]')
+            raise RuntimeError(f'RandSpatialCrop3D: input shape was not expected; input shape: {volume.shape}; expected shape: [B, D, H, W]')
 
         begin = torch.cat([
             torch.randint(low=0, high=max(1, volume.shape[1] - self.size[0] + 1), size=(volume.shape[0],)).unsqueeze(1),
