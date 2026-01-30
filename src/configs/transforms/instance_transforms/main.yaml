@@ -1,4 +1,7 @@
 train:
+  crop:
+    _target_: src.transforms.RandSpatialCrop3D
+    size: [160, 160, 160]
   scale_intensity:
     _target_: src.transforms.ScaleIntensityRange
     a_min: 0

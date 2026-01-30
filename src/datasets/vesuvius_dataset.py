@@ -71,7 +71,7 @@ class VesuviusDataset(BaseDataset):
 
     def load_object(self, path, dtype):
         volume = tiff.imread(path)
-        volume = torch.from_numpy(volume).to(dtype)
+        volume = torch.from_numpy(volume).to(dtype).unsqueeze(0)
         return volume
 
     def __getitem__(self, ind):

@@ -3,9 +3,6 @@ train:
     _target_: src.transforms.RandShiftIntensity3D
     offsets: 0.10
     prob: 0.5
-  crop:
-    _target_: src.transforms.RandSpatialCrop3D
-    size: [160, 160, 160]
   flip1:
     _target_: src.transforms.RandFlip3D
     spatial_axis: 0 # D
