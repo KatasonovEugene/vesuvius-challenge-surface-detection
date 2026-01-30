@@ -40,7 +40,7 @@ class RandFlip3D(nn.Module):
             torch.full(size=(volume.shape[0],), fill_value=self.prob)
         ).to(torch.bool)
 
-        flip = lambda x : torch.flip(x[apply_transform], dims=[self.spatial_axis + 1])
+        flip = lambda x : torch.flip(x, dims=[self.spatial_axis + 1])
         volume[apply_transform] = flip(volume[apply_transform]) # === WARNING !!! IN-PLACE OPERATION ===
         gt_mask[apply_transform] = flip(gt_mask[apply_transform])
         gt_skel[apply_transform] = flip(gt_skel[apply_transform])

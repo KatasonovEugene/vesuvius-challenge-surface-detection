@@ -1,5 +1,5 @@
 train:
-  volume:
+  scale_intensity:
     _target_: src.transforms.ScaleIntensityRange
     a_min: 0
     a_max: 255
@@ -8,7 +8,7 @@ train:
     clip: True
 
 inference:
-  volume:
+  scale_intensity:
     _target_: src.transforms.ScaleIntensityRange
     a_min: 0
     a_max: 255

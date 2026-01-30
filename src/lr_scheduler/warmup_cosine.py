@@ -4,7 +4,7 @@ import numpy as np
 
 class WarmupCosineScheduler(_LRScheduler):
     def __init__(self, optimizer, min_lr, max_lr, min_end_lr, warmup_ratio, steps, last_epoch=-1):
-        self.warmup_steps = int(warmup_ratio * steps)
+        self.warmup_steps = max(int(warmup_ratio * steps), 1)
         self.cosine_steps = steps - self.warmup_steps
         self.min_lr = min_lr
         self.max_lr = max_lr
