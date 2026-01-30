@@ -1,0 +1,6 @@
+_target_: src.model.SegResNetDetector
+spatial_dims: 3
+in_channels: 1
+out_channels: 2
+init_filters: 16
+dropout_prob: 0.2

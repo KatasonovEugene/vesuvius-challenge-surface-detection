@@ -2,31 +2,6 @@ import torch
 from torch import nn
 
 
-class StandartScale(nn.Module):
-    """
-    Scales input using the formula:
-    output = scale * input
-    """
-
-    def __init__(self, scale):
-        """
-        Args:
-            scale (float): scale value used in the transform.
-        """
-        self.scale = scale
-        super().__init__()
-
-    def forward(self, volume):
-        """
-        Args:
-            volume (Tensor): input tensor.
-        Returns:
-            volume (Tensor): scaled tensor.
-        """
-        volume = self.scale * volume
-        return volume
-
-
 class ScaleIntensityRange(nn.Module):
     """
     Scales input from [a_min, a_max] to [b_min, b_max].
@@ -52,7 +27,7 @@ class ScaleIntensityRange(nn.Module):
         self.b_max = b_max
         self.clip = clip
 
-    def forward(self, volume):
+    def forward(self, volume, **batch):
         """
         Args:
             volume (Tensor): input tensor.
@@ -63,6 +38,5 @@ class ScaleIntensityRange(nn.Module):
         volume = (volume - self.a_min) * ((self.b_max - self.b_min) / (self.a_max - self.a_min)) + self.b_min
         if self.clip:
             volume = torch.clamp(volume, min=self.b_min, max=self.b_max)
-
         return {'volume': volume}
 

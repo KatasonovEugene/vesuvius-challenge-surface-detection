@@ -12,8 +12,9 @@ from src.utils.io_utils import ROOT_PATH, read_json, write_json
 class VesuviusDataset(BaseDataset):
     def __init__(
         self,
-        part,
+        part='train',
         val_size=None,
+        override=False,
         *args,
         **kwargs,
     ):
@@ -28,7 +29,7 @@ class VesuviusDataset(BaseDataset):
         else:
             self.data_path = ROOT_PATH / 'data'
 
-        if self.index_path.exists():
+        if self.index_path.exists() and not override:
             index = read_json(str(self.index_path))
         else:
             index = self._create_index(part)
@@ -42,10 +43,9 @@ class VesuviusDataset(BaseDataset):
             target_path = self.data_path / 'train_labels'
         else:
             images_path = self.data_path / 'test_images'
-
         num_images = len([*images_path.iterdir()])
         if self.val_size is not None:
-            num_val_images = self.val_size * num_images
+            num_val_images = int(self.val_size * num_images)
         else:
             num_val_images = num_images
 
@@ -55,7 +55,7 @@ class VesuviusDataset(BaseDataset):
             }
             if self.is_train:
                 item.update({
-                    'target_path': target_path / image_path.name
+                    'target_path': str(target_path / image_path.name)
                 })
             is_item_in_dataset = (
                 (part == 'train' and i >= num_val_images) or
@@ -69,48 +69,21 @@ class VesuviusDataset(BaseDataset):
 
         return index
 
-    def load_object(self, path):
+    def load_object(self, path, dtype):
         volume = tiff.imread(path)
-        volume = torch.from_numpy(volume).long()
+        volume = torch.from_numpy(volume).to(dtype)
         return volume
-
-    def preprocess_data(self, instance_data):
-        """
-        Preprocess data with instance transforms.
-
-        Each tensor in a dict undergoes its own transform defined by the key.
-
-        Args:
-            instance_data (dict): dict, containing instance
-                (a single dataset element).
-        Returns:
-            instance_data (dict): dict, containing instance
-                (a single dataset element) (possibly transformed via
-                instance transform).
-        """
-
-        if self.instance_transforms is not None:
-            for transform_name in self.instance_transforms.keys():
-                if '@' in transform_name: # transform applied for several tensors
-                    transform_names = transform_name.split('@')
-                    data_dict = {name: instance_data[name] for name in transform_names}
-                    transform_result = self.instance_transforms[transform_name](**data_dict)
-                    for name, value in transform_result:
-                        instance_data[name] = value
-                else:
-                    instance_data[transform_name] = self.instance_transforms[transform_name](
-                        instance_data[transform_name]
-                    )
-        return instance_data
 
     def __getitem__(self, ind):
         item = self._index[ind]
         instance_data = {
-            'volume': self.load_object(item['image_path']),
+            'volume': self.load_object(item['image_path'], torch.float32),
         }
         if self.is_train:
+            target = self.load_object(item['target_path'], torch.int64)
             instance_data.update({
-                'target': self.load_object(item['target_path'])
+                'gt_mask': target,
+                'gt_skel': target,
             })
         instance_data = self.preprocess_data(instance_data)
         return instance_data

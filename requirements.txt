@@ -8,6 +8,9 @@ pandas
 wandb
 comet_ml
 hydra-core
+keras
+tensorflow
+scikit-image
 
 black
 isort

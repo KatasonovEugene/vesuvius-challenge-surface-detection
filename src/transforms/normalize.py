@@ -39,7 +39,7 @@ class Normalize3D(nn.Module):
         self.mean = mean
         self.std = std
 
-    def forward(self, volume):
+    def forward(self, volume, **batch):
         """
         Args:
             volume (Tensor): input tensor.
@@ -61,5 +61,4 @@ class Normalize3D(nn.Module):
                 volume = (volume - self.mean) / self.std
         else:
             volume = (volume - self.mean) / self.std
-        return volume
-
+        return {'volume': volume}

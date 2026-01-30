@@ -27,13 +27,12 @@ class RandRotate90_3D(nn.Module):
         self.max_k = min(max_k, 3)
         self.spatial_axes = spatial_axes
 
-
     def rotate90(self, data):
         data = torch.transpose(data, self.spatial_axes[0], self.spatial_axes[1])
         data = torch.flip(data, dims=[self.spatial_axes[1]])
         return data
 
-    def forward(self, volume, target):
+    def forward(self, volume, gt_mask, gt_skel, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
@@ -43,37 +42,20 @@ class RandRotate90_3D(nn.Module):
             target (Tensor): randomly rotated target tensor.
         """
 
-        if volume.shape != target.shape:
-            raise RuntimeError(f'RandRotate90_3D: volume and target shapes should be equal; volume shape: {volume.shape}; target shape: {target.shape}')
-        if volume.dim() not in [3, 4]:
+        if volume.dim() != 4:
             raise RuntimeError(f'RandRotate90_3D: input shape was not expected; input shape: {volume.shape}; expected shape: [D, H, W] or [B, D, H, W]')
 
-        if volume.dim() == 3:
-            apply_transform = torch.bernoulli(torch.tensor([self.prob])).item()
+        apply_transform = torch.bernoulli(
+            torch.full(size=(volume.shape[0],), fill_value=self.prob)
+        ).to(torch.bool)
 
-            if apply_transform:
-                koef = int(torch.randint(1, self.max_k + 1, size=(1,)).item())
-                for _ in range(koef):
-                    volume = self.rotate90(volume)
-                    target = self.rotate90(target)
+        koefs = torch.randint(1, self.max_k + 1, size=(volume.shape[0],))
+        koefs = apply_transform * koefs
 
-            return {'volume': volume, 'target': target}
-        else:
-            apply_transform = torch.bernoulli(
-                torch.full(size=(volume.shape[0],), fill_value=self.prob)
-            )
+        for rotate_num in range(1, self.max_k + 1):
+            apply = (koefs == rotate_num)
+            volume[apply] = self.rotate90(volume[apply])
+            gt_mask[apply] = self.rotate90(gt_mask[apply])
+            gt_skel[apply] = self.rotate90(gt_skel[apply])
 
-            koefs = torch.randint(1, self.max_k + 1, size=(volume.shape[0],))
-            koefs = apply_transform * koefs
-
-            volume_cloned = volume.clone()
-            target_cloned = target.clone()
-
-            for rotate_num in range(1, self.max_k + 1):
-                apply = (koefs == rotate_num)
-                volume = self.rotate90(volume)
-                target = self.rotate90(target)
-                volume_cloned[apply] = volume[apply]
-                target_cloned[apply] = target[apply]
-
-            return {'volume': volume_cloned, 'target': target_cloned}
+        return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel}

@@ -1,1 +1,1 @@
-from src.datasets.base_dataset import VesuviusDataset
+from src.datasets.vesuvius_dataset import VesuviusDataset

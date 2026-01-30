@@ -16,6 +16,7 @@ def collate_fn(dataset_items: list[dict]):
 
     result_batch = {}
     result_batch['volume'] = torch.stack([elem['volume'] for elem in dataset_items])
-    if 'target' in dataset_items[0]:
-        result_batch['target'] = torch.stack([elem['volume'] for elem in dataset_items]).unsqueeze(-1)
+    if 'gt_mask' in dataset_items[0]:
+        result_batch['gt_mask'] = torch.stack([elem['gt_mask'] for elem in dataset_items])
+        result_batch['gt_skel'] = torch.stack([elem['gt_skel'] for elem in dataset_items])
     return result_batch

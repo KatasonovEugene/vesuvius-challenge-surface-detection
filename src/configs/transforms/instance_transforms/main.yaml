@@ -3,6 +3,8 @@ train:
     _target_: src.transforms.ScaleIntensityRange
     a_min: 0
     a_max: 255
+    b_min: 0
+    b_max: 1
     clip: True
 
 inference:
@@ -10,4 +12,6 @@ inference:
     _target_: src.transforms.ScaleIntensityRange
     a_min: 0
     a_max: 255
+    b_min: 0
+    b_max: 1
     clip: True
