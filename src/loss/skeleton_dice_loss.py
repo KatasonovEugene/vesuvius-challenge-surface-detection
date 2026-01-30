@@ -29,7 +29,7 @@ class SkeletonDiceLoss(nn.Module):
         valid_mask = (gt_mask != 2).float()
 
         intersection = (pred_ink_prob * gt_skel * valid_mask).sum(dim=dims)
-        skel_sum = (gt_mask * valid_mask).sum(dim=dims)
+        skel_sum = (gt_skel * valid_mask).sum(dim=dims)
         has_skeleton = (skel_sum > 0).float()
         recall = (intersection + self.eps) / (skel_sum + self.eps)
         skel_loss = torch.mean((1.0 - recall) * has_skeleton)
