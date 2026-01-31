@@ -3,7 +3,7 @@ defaults:
   - writer: wandb
   - metrics: empty
   - datasets: default
-  - dataloader: default
+  - dataloader: debug
   - transforms: debug
   - loss: dice_loss
   - optimizer: adamw
