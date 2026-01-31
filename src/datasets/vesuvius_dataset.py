@@ -15,6 +15,7 @@ class VesuviusDataset(BaseDataset):
         part='train',
         val_size=None,
         override=False,
+        load_in_memory=False,
         *args,
         **kwargs,
     ):
