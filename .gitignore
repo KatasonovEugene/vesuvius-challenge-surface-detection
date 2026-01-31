@@ -117,3 +117,6 @@ plots/
 .vscode/
 .idea/
 __MACOSX/
+
+# debug file
+todebug.py
