@@ -104,13 +104,14 @@ ENV/
 # mypy
 .mypy_cache/
 
-# input data, saved log, checkpoints, hydra outputs
+# input data, saved log, checkpoints, hydra outputs, saved plots
 data/
 input/
 saved/
 wandb/
 .cometml-runs/
 outputs/
+plots/
 
 # editor, os cache directory
 .vscode/
