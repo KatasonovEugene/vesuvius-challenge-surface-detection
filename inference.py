@@ -9,6 +9,13 @@ from src.trainer import Inferencer
 from src.utils.init_utils import set_random_seed
 from src.utils.io_utils import ROOT_PATH
 
+import zipfile
+import os
+import pandas as pd
+import tifffile
+import numpy as np
+from pathlib import Path
+
 warnings.filterwarnings("ignore", category=UserWarning)
 
 
@@ -29,19 +36,18 @@ def main(config):
     else:
         device = config.inferencer.device
 
-    # setup data_loader instances
-    # batch_transforms should be put on device
     dataloaders, batch_transforms = get_dataloaders(config, device)
 
-    # build model architecture, then print to console
     model = instantiate(config.model).to(device)
     print(model)
 
-    # get metrics
     metrics = instantiate(config.metrics)
 
-    # save_path for model predictions
-    save_path = ROOT_PATH / "data" / "saved" / config.inferencer.save_path
+    is_kaggle_env = 'KAGGLE_URL_BASE' in os.environ
+    if is_kaggle_env:
+        save_path = Path('/kaggle/working/')
+    else:
+        save_path = ROOT_PATH / "data" / "saved" / config.inferencer.save_path
     save_path.mkdir(exist_ok=True, parents=True)
 
     inferencer = Inferencer(
@@ -56,6 +62,24 @@ def main(config):
     )
 
     logs = inferencer.run_inference()
+
+    if is_kaggle_env:
+        root_dir = Path('/kaggle/input/vesuvius-challenge-surface-detection')
+        zip_path = "/kaggle/working/submission.zip"
+    else:
+        root_dir = ROOT_PATH / "data"
+        zip_path = ROOT_PATH / "submissions"
+        zip_path.mkdir(parents=True, exist_ok=True)
+        zip_path = zip_path / "submission.zip"
+
+    test_df = pd.read_csv(f"{root_dir}/test.csv")
+
+    with zipfile.ZipFile(
+        zip_path, "w", compression=zipfile.ZIP_DEFLATED
+    ) as z:
+        for image_id in test_df["id"]:
+            out_path = save_path / 'test' / f"{image_id}.tif"
+            z.write(out_path, arcname=f"{image_id}.tif")
 
     for part in logs.keys():
         for key, value in logs[part].items():
