@@ -72,16 +72,16 @@ class VesuviusDataset(BaseDataset):
 
     def load_object(self, path, dtype):
         volume = tiff.imread(path)
-        volume = torch.from_numpy(volume).to(dtype).unsqueeze(0)
+        volume = volume.astype(dtype)[None]
         return volume
 
     def __getitem__(self, ind):
         item = self._index[ind]
         instance_data = {
-            'volume': self.load_object(item['image_path'], torch.float32),
+            'volume': self.load_object(item['image_path'], np.float32),
         }
         if self.is_train:
-            target = self.load_object(item['target_path'], torch.int64)
+            target = self.load_object(item['target_path'], np.int64)
             instance_data.update({
                 'gt_mask': target,
                 'gt_skel': target,
