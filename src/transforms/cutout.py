@@ -9,27 +9,27 @@ class Cutout3D(nn.Module):
     Expected input shape: [B, D, H, W]
     """
 
-    def __init__(self, prob, max_holes, depth, height, width, volume_fill_mode="null", mask_fill_mode="unlabeled"):
+    def __init__(self, prob, holes, depth, height, width, volume_fill_mode="null", mask_fill_mode="unlabeled"):
         """
         Args:
             prob (float):
                 Transform is applied with given probability
-            max_holes (int):
-                The maximum number of cutout holes.
+            holes (int or tuple):
+                The number of cutout holes.
 
-                The actual number of holes is randomly sampled uniformly from the range [1, max_holes].
+                Can be tuple of two integers defining the range [min, max] of number of holse.
             depth (int or tuple):
                 A depth of the cutout hole.    
 
-                Can be tuple of two integers defining the range (min, max) of depth.
+                Can be tuple of two integers defining the range [min, max] of depth.
             height (int or tuple):
                 A height of the cutout hole.    
 
-                Can be tuple of two integers defining the range (min, max) of height.
+                Can be tuple of two integers defining the range [min, max] of height.
             width (int or tuple):
                 A width of the cutout hole.    
 
-                Can be tuple of two integers defining the range (min, max) of width.
+                Can be tuple of two integers defining the range [min, max] of width.
             volume_fill_mode (string):
                 Fill mode of the hole in the volume
 
@@ -50,7 +50,9 @@ class Cutout3D(nn.Module):
         super().__init__()
 
         self.prob = min(1.0, max(0.0, prob))
-        self.max_holes = max_holes
+
+        if isinstance(holes, int): holes = (holes, holes)
+        self.holes = holes
 
         if isinstance(depth, int): depth = (depth, depth)
         if isinstance(height, int): height = (height, height)
@@ -138,10 +140,10 @@ class Cutout3D(nn.Module):
             torch.full(size=(volume.shape[0],), fill_value=self.prob)
         ).to(torch.bool)
 
-        num_holes = torch.randint(1, self.max_holes + 1, size=(volume.shape[0],))
+        num_holes = torch.randint(self.holes[0], self.holes[1] + 1, size=(volume.shape[0],))
         num_holes = apply_transform * num_holes
 
-        for hole_idx in range(1, self.max_holes + 1):
+        for hole_idx in range(1, self.holes[1] + 1):
             apply = (num_holes >= hole_idx)
             volume[apply], gt_mask[apply], gt_skel[apply] = self.cutout(volume[apply], gt_mask[apply], gt_skel[apply]) # === WARNING!!! IN-PLACE OPERATION ===
 
