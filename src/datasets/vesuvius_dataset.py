@@ -82,12 +82,13 @@ class VesuviusDataset(BaseDataset):
 
     def __getitem__(self, ind):
         item = self._index[ind]
+        image_path, target_path = item['image_path'], item['target_path']
         instance_data = {
-            'volume': self.load_object(item['image_path'], np.float32),
-            'image_id': int(os.path.splitext(os.path.basename(item['image_path']))[0])
+            'volume': self.load_object(image_path, np.float32),
+            'image_id': Path(image_path).stem,
         }
         if self.is_train:
-            target = self.load_object(item['target_path'], np.int64)
+            target = self.load_object(target_path, np.int64)
             instance_data.update({
                 'gt_mask': target,
                 'gt_skel': target,
