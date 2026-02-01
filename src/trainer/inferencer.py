@@ -144,7 +144,7 @@ class Inferencer(BaseTrainer):
             output_image_id = batch['image_id'][i]
 
             if self.save_path is not None:
-                tiff.imsave(self.save_path / part / f'{output_image_id}.tif', post_processed_sample.cpu().numpy())
+                tiff.imwrite(self.save_path / part / f'{output_image_id}.tif', post_processed_sample.cpu().numpy())
 
         return batch
 

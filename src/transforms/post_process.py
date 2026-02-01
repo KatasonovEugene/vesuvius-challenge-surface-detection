@@ -8,7 +8,7 @@ from skimage.morphology import remove_small_objects
 class PostProcess(nn.Module):
     """
     Post process tranfrorm for 3D input, containing probabilites of class 1.
-    Expected input shape: [B, D, H, W, 1] or [D, H, W, 1]
+    Expected input shape: [B, D, H, W] or [D, H, W]
     """
 
     def __init__(self, T_low=0.50, T_high=0.90, z_radius=1, xy_radius=0, dust_min_size=100):
@@ -73,13 +73,13 @@ class PostProcess(nn.Module):
         """
 
         was_unsqueezed = False
-        if outputs.dim() == 4:
-            outputs = outputs.unsqueeze(0) # [D, H, W, 1] -> [1, D, H, W, 1]
+        if outputs.dim() == 3:
+            outputs = outputs.unsqueeze(0) # [D, H, W] -> [1, D, H, W]
             was_unsqueezed = True
 
         result = outputs.clone()
         for i in range(outputs.shape[0]):
-            volume = outputs[i].squeeze(-1) # [D, H, W, 1] -> [D, H, W]
+            volume = outputs[i]
             volume = volume.cpu().numpy()
 
             # --- Step 1: 3D Hysteresis ---

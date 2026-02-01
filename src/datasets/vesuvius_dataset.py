@@ -22,11 +22,12 @@ class VesuviusDataset(BaseDataset):
         index_name = f"{part}_index.json"
         self.is_kaggle_env = 'KAGGLE_URL_BASE' in os.environ
         if self.is_kaggle_env:
-            self.index_path = ROOT_PATH / "data" / index_name
+            self.index_path = ROOT_PATH / "data"
         else:
             self.index_path = Path("data")
-            self.index_path.mkdir(parents=True, exist_ok=True)
-            self.index_path = self.index_path / index_name
+        self.index_path.mkdir(parents=True, exist_ok=True)
+        self.index_path = self.index_path / index_name
+
         assert part in ['train', 'val', 'test']
         self.val_size = val_size
         self.is_train = part != 'test'
