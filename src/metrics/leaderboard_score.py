@@ -13,6 +13,7 @@ class LeaderboardScore(BaseMetric):
         """
         super().__init__(*args, **kwargs)
 
+    @torch.no_grad()
     def __call__(self, *, logits: torch.Tensor, gt_mask: torch.Tensor, **kwargs):
         """
         Expected shape: [B, D, H, W, 1] or [B, D, H, W]
@@ -28,12 +29,12 @@ class LeaderboardScore(BaseMetric):
             logits = logits.squeeze(-1)
             gt_mask = gt_mask.squeeze(-1)
 
-        probs = torch.softmax(logits, dim=1)[:, 1]
+        logits = torch.softmax(logits, dim=1)[:, 1] # probs
 
         score_total = 0.0
-        for sample_idx in range(probs.shape[0]):
+        for sample_idx in range(logits.shape[0]):
             # pr, gt are 3D arrays with identical shape (Z, Y, X)
-            pr = probs[sample_idx].detach().cpu().numpy()
+            pr = logits[sample_idx].detach().cpu().numpy()
             gt = gt_mask[sample_idx].detach().cpu().numpy()
 
             rep = compute_leaderboard_score(

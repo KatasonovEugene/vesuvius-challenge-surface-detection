@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 from monai.inferers.utils import sliding_window_inference
 
@@ -25,15 +26,16 @@ class SlidingWindowWrapper(nn.Module):
         if self.training:
             return self.model(**batch)
         else:
-            logits = sliding_window_inference(
-                inputs=batch['volume'].unsqueeze(1),
-                roi_size=self.roi_size,
-                sw_batch_size=self.sw_batch_size,
-                predictor=self._predictor,
-                overlap=self.overlap,
-                mode=self.mode
-            )
-            return {'logits': logits}
+            with torch.no_grad():
+                logits = sliding_window_inference(
+                    inputs=batch['volume'].unsqueeze(1),
+                    roi_size=self.roi_size,
+                    sw_batch_size=self.sw_batch_size,
+                    predictor=self._predictor,
+                    overlap=self.overlap,
+                    mode=self.mode
+                )
+                return {'logits': logits}
 
     def state_dict(self, *args, **kwargs):
         return self.model.state_dict(*args, **kwargs)
