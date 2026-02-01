@@ -19,7 +19,7 @@ train:
     _target_: src.transforms.RandRotate90_3D
     prob: 0.4
     max_k: 3
-    spatial_axes: [0, 1] # D H
+    spatial_axes: [1, 2] # H W
   cutout3d:
     _target_: src.transforms.Cutout3D
     prob: 0.4
