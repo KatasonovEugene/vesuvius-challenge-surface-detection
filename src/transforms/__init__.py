@@ -5,3 +5,5 @@ from src.transforms.flip import RandFlip3D
 from src.transforms.shift_intensity import RandShiftIntensity3D
 from src.transforms.crop import RandSpatialCrop3D
 from src.transforms.post_process import PostProcess
+from src.transforms.skeletonize import Skeletonize
+from src.transforms.to_torch import ToTorch

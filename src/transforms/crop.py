@@ -1,4 +1,4 @@
-import torch
+import numpy as np
 from torch import nn
 
 
@@ -30,24 +30,24 @@ class RandSpatialCrop3D(nn.Module):
             gt_skel (Tensor): randomly cropped ground truth skeleton tensor.
         """
 
-        if volume.dim() != 4:
+        if volume.ndim != 4:
             raise RuntimeError(f'RandSpatialCrop3D: input shape was not expected; input shape: {volume.shape}; expected shape: [B, D, H, W]')
 
-        begin = torch.cat([
-            torch.randint(low=0, high=max(1, volume.shape[1] - self.size[0] + 1), size=(volume.shape[0],)).unsqueeze(1),
-            torch.randint(low=0, high=max(1, volume.shape[2] - self.size[1] + 1), size=(volume.shape[0],)).unsqueeze(1),
-            torch.randint(low=0, high=max(1, volume.shape[3] - self.size[2] + 1), size=(volume.shape[0],)).unsqueeze(1)
-        ], dim=1)
+        begin = np.concatenate([
+            np.random.randint(low=0, high=max(1, volume.shape[1] - self.size[0] + 1), size=(volume.shape[0],))[:, None],
+            np.random.randint(low=0, high=max(1, volume.shape[2] - self.size[1] + 1), size=(volume.shape[0],))[:, None],
+            np.random.randint(low=0, high=max(1, volume.shape[3] - self.size[2] + 1), size=(volume.shape[0],))[:, None],
+        ], axis=1)
 
-        dz = torch.arange(self.size[0])[None, :, None, None]
-        dy = torch.arange(self.size[1])[None, None, :, None]
-        dx = torch.arange(self.size[2])[None, None, None, :] 
+        dz = np.arange(self.size[0])[None, :, None, None]
+        dy = np.arange(self.size[1])[None, None, :, None]
+        dx = np.arange(self.size[2])[None, None, None, :] 
 
         z_idx = begin[:, 0][:, None, None, None] + dz
         y_idx = begin[:, 1][:, None, None, None] + dy
         x_idx = begin[:, 2][:, None, None, None] + dx
 
-        b_idx = torch.arange(volume.shape[0])[:, None, None, None]
+        b_idx = np.arange(volume.shape[0])[:, None, None, None]
 
         crop = lambda x : x[b_idx, z_idx, y_idx, x_idx]
         volume = crop(volume)
