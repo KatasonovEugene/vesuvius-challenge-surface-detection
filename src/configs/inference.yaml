@@ -1,13 +1,13 @@
 defaults:
   - model: segresnet
-  - metrics: main
-  - datasets: only_val
+  - metrics: empty
+  - datasets: test
   - dataloader: default
   - transforms: main
-  - tta_transforms: rotations
+  - tta_transforms: flips
   - _self_
 inferencer:
-  device_tensors: ["volume", "gt_mask"]
+  device_tensors: ["volume"]
   device: auto
   save_path: "submission_dir"
   seed: 1
