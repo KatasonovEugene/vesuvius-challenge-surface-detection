@@ -7,7 +7,9 @@ class Skeletonize(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, gt_skel, **batch):
+    def forward(self, gt_skel=None, **batch):
+        if gt_skel is None:
+            return {}
         gt_skel = gt_skel.squeeze(axis=0)
         mask = (gt_skel == 1)
         skel = skeletonize(mask)

@@ -2,7 +2,7 @@ defaults:
   - model: inference-segresnet
   - metrics: empty
   - datasets: test
-  - dataloader: val
+  - dataloader: default
   - transforms: main
   - _self_
 inferencer:

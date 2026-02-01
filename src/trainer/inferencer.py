@@ -124,19 +124,9 @@ class Inferencer(BaseTrainer):
         batch = self.move_batch_to_device(batch)
         batch = self.transform_batch(batch)  # transform batch on device -- faster
 
-        outputs = sliding_window_inference(
-            inputs=batch['volume'].unsqueeze(1),
-            roi_size=(160, 160, 160),
-            sw_batch_size=1,
-            predictor=self.model,
-            overlap=0.50,
-            mode="gaussian"
-        )
-        batch['outputs_logits'] = outputs # logits of classes
-        batch['outputs'] = torch.nn.functional.softmax(batch['outputs_logits'], dim=1)[:, 1].squeeze(1) # probs of class 1
-
-        # outputs = self.model(**batch)
-        # batch.update(outputs)
+        outputs = self.model(**batch)
+        batch.update(outputs)
+        batch['outputs'] = torch.nn.functional.softmax(batch['logits'], dim=1)[:, 1].squeeze(1) # probs of class 1
 
         if metrics is not None and self.metrics is not None:
             for met in self.metrics["inference"]:
