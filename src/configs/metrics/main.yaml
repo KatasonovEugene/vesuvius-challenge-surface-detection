@@ -1,0 +1,5 @@
+device: "auto"
+train:
+  - _target_: src.metrics.LeaderboardScore
+inference:
+  - _target_: src.metrics.LeaderboardScore
