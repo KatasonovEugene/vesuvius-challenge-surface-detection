@@ -20,11 +20,16 @@ class VesuviusDataset(BaseDataset):
         **kwargs,
     ):
         index_name = f"{part}_index.json"
-        self.index_path = ROOT_PATH / "data" / index_name
+        self.is_kaggle_env = 'KAGGLE_URL_BASE' in os.environ
+        if self.is_kaggle_env:
+            self.index_path = ROOT_PATH / "data" / index_name
+        else:
+            self.index_path = Path("data")
+            self.index_path.mkdir(parents=True, exist_ok=True)
+            self.index_path = self.index_path / index_name
         assert part in ['train', 'val', 'test']
         self.val_size = val_size
         self.is_train = part != 'test'
-        self.is_kaggle_env = 'KAGGLE_URL_BASE' in os.environ
         if self.is_kaggle_env:
             self.data_path = Path('/kaggle/input/vesuvius-challenge-surface-detection')
         else:
@@ -79,6 +84,7 @@ class VesuviusDataset(BaseDataset):
         item = self._index[ind]
         instance_data = {
             'volume': self.load_object(item['image_path'], np.float32),
+            'image_id': int(os.path.splitext(os.path.basename(item['image_path']))[0])
         }
         if self.is_train:
             target = self.load_object(item['target_path'], np.int64)

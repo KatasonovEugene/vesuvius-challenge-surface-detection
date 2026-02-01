@@ -1,13 +1,13 @@
 defaults:
-  - model: transunet
-  - metrics: main # maybe null ?
-  - datasets: test # we do not want to run inference on training data
-  - dataloader: default
+  - model: inference-segresnet
+  - metrics: empty
+  - datasets: test
+  - dataloader: val
   - transforms: main
   - _self_
 inferencer:
-  device_tensors: ["volume"] # which tensors should be on device (ex. GPU)
+  device_tensors: ["volume"]
   device: auto
   save_path: "submission_dir"
   seed: 1
-  from_pretrained: "saved/model_best.pth" # path to the pretrained model
+  from_pretrained: "saved/baseline/checkpoint-epoch20.pth"

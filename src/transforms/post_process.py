@@ -64,7 +64,7 @@ class PostProcess(nn.Module):
         return struct
 
 
-    def forward(self, outputs):
+    def forward(self, outputs, **batch):
         """
         Args:
             outputs (Tensor): tensor containing probabilities [0, 1] of class 1
