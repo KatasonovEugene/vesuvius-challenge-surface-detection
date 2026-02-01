@@ -12,7 +12,11 @@ train:
     a_max: 255
     b_min: 0
     b_max: 1
-    clip: True
+    clip: False
+  normalize:
+    _target_: src.transforms.Normalize3D
+    mean: 0.326182128354465
+    std: 0.166721404805906
 
 inference:
   skeletonize:
@@ -25,4 +29,8 @@ inference:
     a_max: 255
     b_min: 0
     b_max: 1
-    clip: True
+    clip: False
+  normalize:
+    _target_: src.transforms.Normalize3D
+    mean: 0.326182128354465
+    std: 0.166721404805906

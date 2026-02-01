@@ -1,4 +1,3 @@
-from typing import Any, Mapping
 import torch.nn as nn
 from monai.inferers.utils import sliding_window_inference
 
