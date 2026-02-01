@@ -18,9 +18,9 @@ trainer:
   resume_from: null
   from_pretrained: null
   device: auto
-  override: False
+  override: True
   monitor: "off"
   save_period: 5
   early_stop: ${trainer.n_epochs}
-  save_dir: "saved"
+  save_dir: "saved_debug"
   seed: 1

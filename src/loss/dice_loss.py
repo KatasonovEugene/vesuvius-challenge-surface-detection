@@ -19,7 +19,7 @@ class DiceLoss(nn.Module):
         )
 
     def forward(self, logits: torch.Tensor, gt_mask: torch.Tensor, **batch):
-        probs = torch.softmax(logits, axis=1)
+        probs = torch.softmax(logits, dim=1)
         dice_loss = self.dice_loss(gt_mask, logits, probs)
 
         pred_ink_prob = probs[:, 1]
