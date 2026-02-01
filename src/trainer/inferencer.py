@@ -7,6 +7,7 @@ import scipy.ndimage as ndi
 from src.metrics.tracker import MetricTracker
 from src.trainer.base_trainer import BaseTrainer
 
+from monai.inferers.utils import sliding_window_inference
 
 class Inferencer(BaseTrainer):
     """
@@ -119,17 +120,19 @@ class Inferencer(BaseTrainer):
                 the dataloader (possibly transformed via batch transform)
                 and model outputs.
         """
+
         batch = self.move_batch_to_device(batch)
         batch = self.transform_batch(batch)  # transform batch on device -- faster
 
         outputs = self.model(**batch)
         batch.update(outputs)
+        batch['outputs'] = torch.nn.functional.softmax(batch['logits'], dim=1)[:, 1].squeeze(1) # probs of class 1
 
-        if metrics is not None:
-            for met in metrics["inference"]:
+        if metrics is not None and self.metrics is not None:
+            for met in self.metrics["inference"]:
                 metrics.update(met.name, met(**batch))
 
-        batch_size = batch["outputs"].shape[0]
+        batch_size = batch['outputs'].shape[0]
         current_id = batch_idx * batch_size
 
         batch = self.post_process_batch(batch)
@@ -138,10 +141,10 @@ class Inferencer(BaseTrainer):
             # https://github.com/pytorch/pytorch/issues/1995
 
             post_processed_sample = batch["outputs"][i].clone()
-            output_id = current_id + i
+            output_image_id = batch['image_id'][i]
 
             if self.save_path is not None:
-                tiff.imsave(self.save_path / part / f"{output_id}.tif", post_processed_sample)
+                tiff.imsave(self.save_path / part / f'{output_image_id}.tif', post_processed_sample.cpu().numpy())
 
         return batch
 
@@ -156,9 +159,8 @@ class Inferencer(BaseTrainer):
                     for name, value in transform_result:
                         batch[name] = value
                 else:
-                    batch[transform_name] = transforms[transform_name](
-                        batch[transform_name]
-                    )
+                    transform_result = transforms[transform_name](**batch)
+                    batch.update(transform_result)
         return batch
 
 

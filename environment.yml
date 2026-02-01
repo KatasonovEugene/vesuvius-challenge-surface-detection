@@ -1,0 +1,21 @@
+name: kgl
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pytorch
+  - pytorch-cuda=12.1
+  - numpy
+  - scipy
+  - monai
+  - torchmetrics
+  - hydra-core
+  - scikit-image
+  - imagecodecs
+  - numpy
+  - tqdm
+  - matplotlib
+  - pandas
+  - wandb

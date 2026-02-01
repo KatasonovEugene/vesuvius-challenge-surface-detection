@@ -2,6 +2,10 @@ train:
   crop:
     _target_: src.transforms.RandSpatialCrop3D
     size: [160, 160, 160]
+  skeletonize:
+    _target_: src.transforms.Skeletonize # skeletonize must be after crop
+  to_torch:
+    _target_: src.transforms.ToTorch # to_torch must be after skeletonize
   scale_intensity:
     _target_: src.transforms.ScaleIntensityRange
     a_min: 0
@@ -14,6 +18,10 @@ inference:
   crop:
     _target_: src.transforms.RandSpatialCrop3D
     size: [160, 160, 160]
+  skeletonize:
+    _target_: src.transforms.Skeletonize # skeletonize must be after crop
+  to_torch:
+    _target_: src.transforms.ToTorch # to_torch must be after skeletonize
   scale_intensity:
     _target_: src.transforms.ScaleIntensityRange
     a_min: 0

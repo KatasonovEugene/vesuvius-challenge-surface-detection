@@ -15,15 +15,21 @@ class VesuviusDataset(BaseDataset):
         part='train',
         val_size=None,
         override=False,
+        load_in_memory=False,
         *args,
         **kwargs,
     ):
         index_name = f"{part}_index.json"
-        self.index_path = ROOT_PATH / "data" / index_name
+        self.is_kaggle_env = 'KAGGLE_URL_BASE' in os.environ
+        if self.is_kaggle_env:
+            self.index_path = ROOT_PATH / "data" / index_name
+        else:
+            self.index_path = Path("data")
+            self.index_path.mkdir(parents=True, exist_ok=True)
+            self.index_path = self.index_path / index_name
         assert part in ['train', 'val', 'test']
         self.val_size = val_size
         self.is_train = part != 'test'
-        self.is_kaggle_env = 'KAGGLE_URL_BASE' in os.environ
         if self.is_kaggle_env:
             self.data_path = Path('/kaggle/input/vesuvius-challenge-surface-detection')
         else:
@@ -71,16 +77,19 @@ class VesuviusDataset(BaseDataset):
 
     def load_object(self, path, dtype):
         volume = tiff.imread(path)
-        volume = torch.from_numpy(volume).to(dtype).unsqueeze(0)
+        volume = volume.astype(dtype)[None]
         return volume
 
     def __getitem__(self, ind):
         item = self._index[ind]
+        image_path = item['image_path']
         instance_data = {
-            'volume': self.load_object(item['image_path'], torch.float32),
+            'volume': self.load_object(image_path, np.float32),
+            'image_id': Path(image_path).stem,
         }
         if self.is_train:
-            target = self.load_object(item['target_path'], torch.int64)
+            target_path = item['target_path']
+            target = self.load_object(target_path, np.int64)
             instance_data.update({
                 'gt_mask': target,
                 'gt_skel': target,

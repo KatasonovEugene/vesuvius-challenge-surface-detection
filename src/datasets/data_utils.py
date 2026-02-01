@@ -74,14 +74,21 @@ def get_dataloaders(config, device):
             f"The batch size ({config.dataloader.batch_size}) cannot "
             f"be larger than the dataset length ({len(dataset)})"
         )
-
-        partition_dataloader = instantiate(
-            config.dataloader,
+        kwargs = dict(
             dataset=dataset,
             collate_fn=collate_fn,
             drop_last=(dataset_partition == "train"),
             shuffle=(dataset_partition == "train"),
             worker_init_fn=set_worker_seed,
+        )
+        if dataset_partition != "train":
+            kwargs.update(
+                batch_size=1,
+            )
+
+        partition_dataloader = instantiate(
+            config.dataloader,
+            **kwargs
         )
         dataloaders[dataset_partition] = partition_dataloader
 

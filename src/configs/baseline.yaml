@@ -5,16 +5,16 @@ defaults:
   - datasets: default
   - dataloader: default
   - transforms: main
-  - loss: dice_loss
+  - loss: skeleton_dice_loss
   - optimizer: adamw
   - lr_scheduler: warmup_cosine
   - _self_
 
 trainer:
-  log_step: 50
-  n_epochs: 100
+  log_step: 10
+  n_epochs: 30
   epoch_len: 500
-  device_tensors: ["volume", "gt_mask"]
+  device_tensors: ["volume", "gt_mask", "gt_skel"]
   resume_from: null
   from_pretrained: null
   device: auto
