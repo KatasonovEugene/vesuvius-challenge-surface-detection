@@ -109,7 +109,7 @@ class Flip3D(nn.Module):
         if logits.dim() != 5:
             raise RuntimeError(f'Flip3D: input shape was not expected; input shape: {logits.shape}; expected shape: [B, C, D, H, W]')
 
-        logits = torch.flip(logits, dims=[self.spatial_axis + 1])
+        logits = torch.flip(logits, dims=[self.spatial_axis + 2])
         if gt_mask is not None:
             gt_mask = torch.flip(gt_mask, dims=[self.spatial_axis + 1])
         if gt_skel is not None:
