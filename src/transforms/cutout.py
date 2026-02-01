@@ -1,0 +1,150 @@
+import torch
+from torch import nn
+
+
+class Cutout3D(nn.Module):
+    """
+    Cutout transform for 3D input.
+
+    Expected input shape: [B, D, H, W]
+    """
+
+    def __init__(self, prob, holes, depth, height, width, volume_fill_mode="null", mask_fill_mode="unlabeled"):
+        """
+        Args:
+            prob (float):
+                Transform is applied with given probability
+            holes (int or tuple):
+                The number of cutout holes.
+
+                Can be tuple of two integers defining the range [min, max] of number of holse.
+            depth (int or tuple):
+                A depth of the cutout hole.    
+
+                Can be tuple of two integers defining the range [min, max] of depth.
+            height (int or tuple):
+                A height of the cutout hole.    
+
+                Can be tuple of two integers defining the range [min, max] of height.
+            width (int or tuple):
+                A width of the cutout hole.    
+
+                Can be tuple of two integers defining the range [min, max] of width.
+            volume_fill_mode (string):
+                Fill mode of the hole in the volume
+
+                'null': fill with zeros
+
+                'noise': fill with random noise
+            mask_fill_mode (string):
+                Fill mode of the hole in the mask (GT)
+
+                'none': mask does not change at all
+
+                'null': fill with zeros
+
+                'noise': fill with random noise
+
+                'unlabeled': fill with 'unlabeled' class, pixels will be ignored in loss (fills with 2)
+        """
+        super().__init__()
+
+        self.prob = min(1.0, max(0.0, prob))
+
+        if isinstance(holes, int): holes = (holes, holes)
+        self.holes = holes
+
+        if isinstance(depth, int): depth = (depth, depth)
+        if isinstance(height, int): height = (height, height)
+        if isinstance(width, int): width = (width, width)
+
+        self.depth = depth
+        self.height = height
+        self.width = width
+
+        self.volume_fill_mode = volume_fill_mode
+        self.mask_fill_mode = mask_fill_mode
+
+    def fill_with_zeros(self, volume):
+        return torch.zeros_like(volume)
+
+    def fill_with_noise(self, volume):
+        return torch.rand_like(volume)
+
+    def fill_with_unlabeled(self, volume):
+        return torch.full_like(volume, fill_value=2)
+
+    def volume_fill(self, volume, b_idx, z_idx, y_idx, x_idx): # === WARNING!!! IN-PLACE OPERATIONS ===
+        if self.volume_fill_mode == 'null':
+            volume[b_idx, z_idx, y_idx, x_idx] = self.fill_with_zeros(volume[b_idx, z_idx, y_idx, x_idx])
+        elif self.volume_fill_mode == 'noise':
+            volume[b_idx, z_idx, y_idx, x_idx] = self.fill_with_noise(volume[b_idx, z_idx, y_idx, x_idx])
+        return volume
+
+    def mask_fill(self, mask, b_idx, z_idx, y_idx, x_idx): # === WARNING!!! IN-PLACE OPERATIONS ===
+        if self.mask_fill_mode == 'null':
+            mask[b_idx, z_idx, y_idx, x_idx] = self.fill_with_zeros(mask[b_idx, z_idx, y_idx, x_idx]) 
+        elif self.mask_fill_mode == 'noise':
+            mask[b_idx, z_idx, y_idx, x_idx] = self.fill_with_noise(mask[b_idx, z_idx, y_idx, x_idx])
+        elif self.mask_fill_mode == 'unlabeled':
+            mask[b_idx, z_idx, y_idx, x_idx] = self.fill_with_unlabeled(mask[b_idx, z_idx, y_idx, x_idx])
+        return mask
+
+    def cutout(self, volume, gt_mask, gt_skel, **batch):
+        if volume.shape[0] == 0:
+            return volume, gt_mask, gt_skel
+
+        size = torch.cat([
+            torch.randint(low=self.depth[0], high=self.depth[1] + 1, size=(1,)),
+            torch.randint(low=self.height[0], high=self.height[1] + 1, size=(1,)),
+            torch.randint(low=self.width[0], high=self.width[1] + 1, size=(1,))
+        ], dim=0)  # === Sizes of holes are the same for all elements of the batch (due to realisation issues) ===
+
+        begin = torch.cat([
+            torch.randint(low=0, high=max(1, volume.shape[1] - size[0] + 1), size=(volume.shape[0],)).unsqueeze(1),
+            torch.randint(low=0, high=max(1, volume.shape[2] - size[1] + 1), size=(volume.shape[0],)).unsqueeze(1),
+            torch.randint(low=0, high=max(1, volume.shape[3] - size[2] + 1), size=(volume.shape[0],)).unsqueeze(1)
+        ], dim=1)
+
+        dz = torch.arange(size[0].item())[None, :, None, None]
+        dy = torch.arange(size[1].item())[None, None, :, None]
+        dx = torch.arange(size[2].item())[None, None, None, :] 
+
+        z_idx = begin[:, 0][:, None, None, None] + dz
+        y_idx = begin[:, 1][:, None, None, None] + dy
+        x_idx = begin[:, 2][:, None, None, None] + dx
+
+        b_idx = torch.arange(volume.shape[0])[:, None, None, None]
+
+        volume = self.volume_fill(volume, b_idx, z_idx, y_idx, x_idx)
+        gt_mask = self.mask_fill(gt_mask, b_idx, z_idx, y_idx, x_idx)
+        gt_skel = self.mask_fill(gt_skel, b_idx, z_idx, y_idx, x_idx)
+        return volume, gt_mask, gt_skel
+
+    def forward(self, volume, gt_mask, gt_skel, **batch):
+        """
+        Args:
+            volume (Tensor): volume tensor.
+            gt_mask (Tensor): ground truth mask tensor.
+            gt_skel (Tensor): ground truth skeleton tensor.
+        Returns:
+            volume (Tensor): cutouted volume tensor.
+            gt_mask (Tensor): cutouted ground truth mask tensor.
+            gt_skel (Tensor): cutouted ground truth skeleton tensor.
+        """
+
+        if volume.dim() != 4:
+            raise RuntimeError(f'Cutout3D: input shape was not expected; input shape: {volume.shape}; expected shape: [B, D, H, W]')
+
+        apply_transform = torch.bernoulli(
+            torch.full(size=(volume.shape[0],), fill_value=self.prob)
+        ).to(torch.bool)
+
+        num_holes = torch.randint(self.holes[0], self.holes[1] + 1, size=(volume.shape[0],))
+        num_holes = apply_transform * num_holes
+
+        for hole_idx in range(1, self.holes[1] + 1):
+            apply = (num_holes >= hole_idx)
+            volume[apply], gt_mask[apply], gt_skel[apply] = self.cutout(volume[apply], gt_mask[apply], gt_skel[apply]) # === WARNING!!! IN-PLACE OPERATION ===
+
+        return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel}

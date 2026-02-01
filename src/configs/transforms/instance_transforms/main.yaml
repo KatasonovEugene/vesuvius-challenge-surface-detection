@@ -15,6 +15,9 @@ train:
     clip: True
 
 inference:
+  crop:
+    _target_: src.transforms.RandSpatialCrop3D
+    size: [160, 160, 160]
   skeletonize:
     _target_: src.transforms.Skeletonize # skeletonize must be after crop
   to_torch:

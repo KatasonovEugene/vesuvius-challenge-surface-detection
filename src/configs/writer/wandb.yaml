@@ -1,7 +1,7 @@
 _target_: src.logger.WandBWriter
 project_name: "vesuvius-challenge-surface-detection"
 entity: "TKNP"
-run_name: "baseline"
+run_name: "cutout3d_fixed_classes"
 mode: "offline"
 loss_names: ["skel_loss", "dice_loss", "fp_loss", "loss"]
 log_checkpoints: False # set to True if you want to log save_dir with checkpoints to W&B
