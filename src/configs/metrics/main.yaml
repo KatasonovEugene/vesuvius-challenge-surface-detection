@@ -1,5 +1,11 @@
 device: "auto"
 train:
-  - _target_: src.metrics.LeaderboardScore
+  - _target_: src.metrics.SoftDiceMetric
+    num_classes: 2
+  - _target_: src.metrics.HardDiceMetric
+    num_classes: 2
 inference:
-  - _target_: src.metrics.LeaderboardScore
+  - _target_: src.metrics.SoftDiceMetric
+    num_classes: 2
+  - _target_: src.metrics.HardDiceMetric
+    num_classes: 2

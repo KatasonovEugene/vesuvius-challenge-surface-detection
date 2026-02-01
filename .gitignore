@@ -109,6 +109,7 @@ ENV/
 data/
 input/
 saved/
+saved_debug/
 wandb/
 .cometml-runs/
 outputs/
@@ -121,3 +122,6 @@ __MACOSX/
 
 # debug file
 todebug.py
+
+# submissions
+submissions/

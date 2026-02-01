@@ -3,6 +3,7 @@ from tqdm.auto import tqdm
 import numpy as np
 import tifffile as tiff
 import scipy.ndimage as ndi
+import copy
 
 from src.metrics.tracker import MetricTracker
 from src.trainer.base_trainer import BaseTrainer
@@ -27,6 +28,7 @@ class Inferencer(BaseTrainer):
         save_path,
         metrics=None,
         batch_transforms=None,
+        tta_transforms=None,
         skip_model_load=False,
     ):
         """
@@ -62,6 +64,7 @@ class Inferencer(BaseTrainer):
 
         self.model = model
         self.batch_transforms = batch_transforms
+        self.tta_transforms = tta_transforms
 
         # define dataloaders
         self.evaluation_dataloaders = {k: v for k, v in dataloaders.items()}
@@ -126,7 +129,26 @@ class Inferencer(BaseTrainer):
 
         outputs = self.model(**batch)
         batch.update(outputs)
-        batch['outputs'] = torch.nn.functional.softmax(batch['logits'], dim=1)[:, 1].squeeze(1) # probs of class 1
+
+        if self.tta_transforms is not None:
+            samples_num = 1
+            for transform_name in self.tta_transforms.keys():
+                batch_copy = copy.deepcopy(batch)
+
+                transform_result = self.tta_transforms[transform_name](**batch_copy)
+                batch_copy.update(transform_result)
+
+                transformed_outputs = self.model(**batch_copy)
+                batch_copy.update(transformed_outputs)
+
+                real_logits = self.tta_transforms[transform_name].detransform(**batch_copy)
+                batch_copy.update(real_logits)
+
+                batch['logits'] += batch_copy['logits']
+                samples_num += 1
+            batch['logits'] /= samples_num
+
+        batch['outputs'] = torch.nn.functional.softmax(batch['logits'], dim=1)[:, 1].squeeze(1)
 
         if metrics is not None and self.metrics is not None:
             for met in self.metrics["inference"]:

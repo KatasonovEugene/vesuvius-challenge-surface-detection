@@ -1,0 +1,12 @@
+rot90:
+  _target_: src.transforms.Rotate90_3D
+  k: 1
+  spatial_axes: [0, 1]
+rot180:
+  _target_: src.transforms.Rotate90_3D
+  k: 2
+  spatial_axes: [0, 1]
+rot270:
+  _target_: src.transforms.Rotate90_3D
+  k: 3
+  spatial_axes: [0, 1]

@@ -1,13 +1,14 @@
 defaults:
   - model: segresnet
-  - metrics: empty
-  - datasets: test
+  - metrics: main
+  - datasets: only_val
   - dataloader: default
   - transforms: main
+  - tta_transforms: rotations
   - _self_
 inferencer:
-  device_tensors: ["volume"]
+  device_tensors: ["volume", "gt_mask"]
   device: auto
   save_path: "submission_dir"
   seed: 1
-  from_pretrained: "saved/baseline/checkpoint-epoch20.pth"
+  from_pretrained: "saved/segresnet-4bs/checkpoint-epoch100.pth"

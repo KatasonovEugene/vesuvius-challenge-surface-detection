@@ -37,6 +37,7 @@ def main(config):
         device = config.inferencer.device
 
     dataloaders, batch_transforms = get_dataloaders(config, device)
+    tta_transforms = instantiate(config.tta_transforms)
 
     model = instantiate(config.model).to(device)
     print(model)
@@ -56,6 +57,7 @@ def main(config):
         device=device,
         dataloaders=dataloaders,
         batch_transforms=batch_transforms,
+        tta_transforms=tta_transforms,
         save_path=save_path,
         metrics=metrics,
         skip_model_load=False,
