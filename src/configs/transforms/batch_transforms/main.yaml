@@ -22,9 +22,11 @@ train:
     spatial_axes: [1, 2] # H W
   elastic_deformation:
     _target_: src.transforms.ElasticDeformation
-    prob: 0.25
-    sigma: 10.0
-    alpha: 10.0
+    prob: 0.5
+    sigma: 9.0
+    alpha_x: 10.0
+    alpha_y: 10.0
+    alpha_z: 5.0
   cutout3d:
     _target_: src.transforms.Cutout3D
     prob: 0.4

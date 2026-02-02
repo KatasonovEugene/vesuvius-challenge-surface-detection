@@ -10,7 +10,7 @@ class ElasticDeformation(nn.Module):
     Expected input shape: [B, D, H, W]
     """
 
-    def __init__(self, prob, alpha, sigma):
+    def __init__(self, prob, alpha_x, alpha_y, alpha_z, sigma):
         """
         Args:
             prob (float):
@@ -23,17 +23,22 @@ class ElasticDeformation(nn.Module):
         super().__init__()
 
         self.prob = min(1.0, max(0.0, prob))
-        self.alpha = alpha
+        self.alpha_x = alpha_x
+        self.alpha_y = alpha_y
+        self.alpha_z = alpha_z
         self.sigma = sigma
 
         self.size = int(2 * math.ceil(self.sigma * 2) + 1)
-        self.gaussian_kernel = torch.exp(-(torch.arange(self.size) - self.size // 2)**2 / (2 * self.sigma**2))
-        self.gaussian_kernel = self.gaussian_kernel / self.gaussian_kernel.sum()
+        
+        g = torch.exp(-(torch.arange(self.size) - self.size // 2)**2 / (2 * self.sigma**2))
+        g = g / g.sum()
+
+        self.register_buffer('gaussian_kernel', g)
 
     def gaussian_blur(self, volume):
         volume = volume.unsqueeze(1)
 
-        g = self.gaussian_kernel.to(dtype=volume.dtype)
+        g = self.gaussian_kernel.to(dtype=volume.dtype, device=volume.device)
         volume = F.conv3d(volume, g.view(1, 1, -1, 1, 1), padding=(self.size//2, 0, 0))
         volume = F.conv3d(volume, g.view(1, 1, 1, -1, 1), padding=(0, self.size//2, 0))
         volume = F.conv3d(volume, g.view(1, 1, 1, 1, -1), padding=(0, 0, self.size//2))
@@ -66,9 +71,9 @@ class ElasticDeformation(nn.Module):
         dy = torch.randn(B, D, H, W, device=device)
         dz = torch.randn(B, D, H, W, device=device)
 
-        dx = self.gaussian_blur(dx) * self.alpha * 2 / W
-        dy = self.gaussian_blur(dy) * self.alpha * 2 / H
-        dz = self.gaussian_blur(dz) * self.alpha * 2 / D
+        dx = self.gaussian_blur(dx) * self.alpha_x * 2 / W
+        dy = self.gaussian_blur(dy) * self.alpha_y * 2 / H
+        dz = self.gaussian_blur(dz) * self.alpha_z * 2 / D
 
         z = torch.linspace(-1, 1, D, device=device, dtype=volume.dtype)
         y = torch.linspace(-1, 1, H, device=device, dtype=volume.dtype)
@@ -82,8 +87,11 @@ class ElasticDeformation(nn.Module):
         grid = torch.stack((gridx + dx, gridy + dy, gridz + dz), dim=-1)
 
         volume_changed = F.grid_sample(volume.unsqueeze(1), grid, mode="bilinear", padding_mode="border", align_corners=True).squeeze(1)
-        gt_mask_changed = F.grid_sample(gt_mask.unsqueeze(1), grid, mode="nearest", padding_mode="border", align_corners=True).squeeze(1)
-        gt_skel_changed = F.grid_sample(gt_skel.unsqueeze(1), grid, mode="nearest", padding_mode="border", align_corners=True).squeeze(1)
+        gt_mask_changed = F.grid_sample(gt_mask.unsqueeze(1).float(), grid, mode="nearest", padding_mode="border", align_corners=True).squeeze(1)
+        gt_skel_changed = F.grid_sample(gt_skel.unsqueeze(1).float(), grid, mode="nearest", padding_mode="border", align_corners=True).squeeze(1)
+
+        gt_mask_changed = gt_mask_changed.round().to(dtype=gt_mask.dtype)
+        gt_skel_changed = gt_skel_changed.round().to(dtype=gt_skel.dtype)
 
         volume[apply_transform] = volume_changed[apply_transform] # === WARNING!!! IN-PLACE OPERATION ===
         gt_mask[apply_transform] = gt_mask_changed[apply_transform]
