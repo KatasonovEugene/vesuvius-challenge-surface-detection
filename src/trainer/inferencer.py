@@ -148,7 +148,7 @@ class Inferencer(BaseTrainer):
                 samples_num += 1
             batch['logits'] /= samples_num
 
-        batch['outputs'] = torch.nn.functional.softmax(batch['logits'], dim=1)[:, 1].squeeze(1)
+        batch['outputs'] = torch.nn.functional.softmax(batch['logits'], dim=1)[:, 1]
 
         if metrics is not None and self.metrics is not None:
             for met in self.metrics["inference"]:
