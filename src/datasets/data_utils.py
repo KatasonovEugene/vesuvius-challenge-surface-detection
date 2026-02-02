@@ -69,11 +69,6 @@ def get_dataloaders(config, device):
     dataloaders = {}
     for dataset_partition in config.datasets.keys():
         dataset = datasets[dataset_partition]
-
-        assert config.dataloader.batch_size <= len(dataset), (
-            f"The batch size ({config.dataloader.batch_size}) cannot "
-            f"be larger than the dataset length ({len(dataset)})"
-        )
         kwargs = dict(
             dataset=dataset,
             collate_fn=collate_fn,
@@ -85,6 +80,10 @@ def get_dataloaders(config, device):
             kwargs.update(
                 batch_size=1,
             )
+        assert kwargs['batch_size'] <= len(dataset), (
+            f"The batch size ({config.dataloader.batch_size}) cannot "
+            f"be larger than the dataset length ({len(dataset)})"
+        )
 
         partition_dataloader = instantiate(
             config.dataloader,
