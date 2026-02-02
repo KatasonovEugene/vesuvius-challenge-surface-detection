@@ -18,8 +18,13 @@ train:
   rot90:
     _target_: src.transforms.RandRotate90_3D
     prob: 0.4
-    max_k: 3
+    possible_k: [1, 3]
     spatial_axes: [1, 2] # H W
+  elastic_deformation:
+    _target_: src.transforms.ElasticDeformation
+    prob: 0.25
+    sigma: 10.0
+    alpha: 10.0
   cutout3d:
     _target_: src.transforms.Cutout3D
     prob: 0.4

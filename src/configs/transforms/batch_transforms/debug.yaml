@@ -21,7 +21,7 @@ train:
   rot90:
     _target_: src.transforms.RandRotate90_3D
     prob: 0.4
-    max_k: 3
+    possible_k: [1, 3]
     spatial_axes: [1, 2] # D H
 
 inference:

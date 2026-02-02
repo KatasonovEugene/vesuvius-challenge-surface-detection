@@ -8,14 +8,14 @@ class RandRotate90_3D(nn.Module):
     Expected input shape: [B, D, H, W]
     """
 
-    def __init__(self, prob=0.4, max_k=3, spatial_axes=(0, 1)):
+    def __init__(self, prob=0.4, possible_k=(1, 3), spatial_axes=(0, 1)):
         """
         Args:
             prob (float):
                 rotate is applied with given probability
-            max_k (int):
-                The maximum number of 90-degree rotations (k).
-                The actual number of rotations (k) is randomly sampled uniformly from the range [1, max_k].
+            possible_k (tuple):
+                The possible numbers of 90-degree rotations (k).
+                The actual number of rotations (k) is randomly sampled uniformly from the possible_k.
             spatial_axes (tuple):
                 A tuple of two integers defining the spatial axes within whose plane the rotation occurs.
                 For 3D data with axes [D, H, W] or [B, D, H, W], setting (0, 1) means rotation happens in the D/H plane
@@ -24,7 +24,8 @@ class RandRotate90_3D(nn.Module):
         super().__init__()
 
         self.prob = min(1.0, max(0.0, prob))
-        self.max_k = min(max_k, 3)
+        self.possible_k = torch.tensor(possible_k)
+        self.max_k = max(possible_k)
         self.spatial_axes = spatial_axes
 
     def rotate90(self, data):
@@ -50,7 +51,8 @@ class RandRotate90_3D(nn.Module):
             torch.full(size=(volume.shape[0],), fill_value=self.prob)
         ).to(torch.bool)
 
-        koefs = torch.randint(1, self.max_k + 1, size=(volume.shape[0],))
+        koefs_idx = torch.randint(0, len(self.possible_k), size=(volume.shape[0],))
+        koefs = self.possible_k[koefs_idx]
         koefs = apply_transform * koefs
 
         for rotate_num in range(1, self.max_k + 1):
