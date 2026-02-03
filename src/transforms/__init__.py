@@ -8,3 +8,4 @@ from src.transforms.post_process import PostProcess
 from src.transforms.cutout import Cutout3D
 from src.transforms.skeletonize import Skeletonize
 from src.transforms.to_torch import ToTorch
+from src.transforms.elastic_deformation import ElasticDeformation
