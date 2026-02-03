@@ -74,20 +74,26 @@ class Cutout3D(nn.Module):
     def fill_with_unlabeled(self, volume):
         return torch.full_like(volume, fill_value=2)
 
-    def volume_fill(self, volume, b_idx, z_idx, y_idx, x_idx): # === WARNING!!! IN-PLACE OPERATIONS ===
+    def volume_fill(self, volume, b_idx, z_idx, y_idx, x_idx):
+        fill_mask = torch.zeros_like(volume, dtype=torch.bool)
+        fill_mask[b_idx, z_idx, y_idx, x_idx] = True
+
         if self.volume_fill_mode == 'null':
-            volume[b_idx, z_idx, y_idx, x_idx] = self.fill_with_zeros(volume[b_idx, z_idx, y_idx, x_idx])
+            volume = torch.where(fill_mask, self.fill_with_zeros(volume), volume)
         elif self.volume_fill_mode == 'noise':
-            volume[b_idx, z_idx, y_idx, x_idx] = self.fill_with_noise(volume[b_idx, z_idx, y_idx, x_idx])
+            volume = torch.where(fill_mask, self.fill_with_noise(volume), volume)
         return volume
 
-    def mask_fill(self, mask, b_idx, z_idx, y_idx, x_idx): # === WARNING!!! IN-PLACE OPERATIONS ===
+    def mask_fill(self, mask, b_idx, z_idx, y_idx, x_idx):
+        fill_mask = torch.zeros_like(mask, dtype=torch.bool)
+        fill_mask[b_idx, z_idx, y_idx, x_idx] = True
+
         if self.mask_fill_mode == 'null':
-            mask[b_idx, z_idx, y_idx, x_idx] = self.fill_with_zeros(mask[b_idx, z_idx, y_idx, x_idx]) 
+            mask = torch.where(fill_mask, self.fill_with_zeros(mask), mask)
         elif self.mask_fill_mode == 'noise':
-            mask[b_idx, z_idx, y_idx, x_idx] = self.fill_with_noise(mask[b_idx, z_idx, y_idx, x_idx])
+            mask = torch.where(fill_mask, self.fill_with_noise(mask), mask)
         elif self.mask_fill_mode == 'unlabeled':
-            mask[b_idx, z_idx, y_idx, x_idx] = self.fill_with_unlabeled(mask[b_idx, z_idx, y_idx, x_idx])
+            mask = torch.where(fill_mask, self.fill_with_unlabeled(mask), mask)
         return mask
 
     def cutout(self, volume, gt_mask, gt_skel, **batch):
@@ -95,26 +101,26 @@ class Cutout3D(nn.Module):
             return volume, gt_mask, gt_skel
 
         size = torch.cat([
-            torch.randint(low=self.depth[0], high=self.depth[1] + 1, size=(1,)),
-            torch.randint(low=self.height[0], high=self.height[1] + 1, size=(1,)),
-            torch.randint(low=self.width[0], high=self.width[1] + 1, size=(1,))
+            torch.randint(self.depth[0], self.depth[1] + 1, size=(1,), device=volume.device),
+            torch.randint(self.height[0], self.height[1] + 1, size=(1,), device=volume.device),
+            torch.randint(self.width[0], self.width[1] + 1, size=(1,), device=volume.device)
         ], dim=0)  # === Sizes of holes are the same for all elements of the batch (due to realisation issues) ===
 
         begin = torch.cat([
-            torch.randint(low=0, high=max(1, volume.shape[1] - size[0] + 1), size=(volume.shape[0],)).unsqueeze(1),
-            torch.randint(low=0, high=max(1, volume.shape[2] - size[1] + 1), size=(volume.shape[0],)).unsqueeze(1),
-            torch.randint(low=0, high=max(1, volume.shape[3] - size[2] + 1), size=(volume.shape[0],)).unsqueeze(1)
+            torch.randint(low=0, high=max(1, volume.shape[1] - size[0] + 1), size=(volume.shape[0],), device=volume.device).unsqueeze(1),
+            torch.randint(low=0, high=max(1, volume.shape[2] - size[1] + 1), size=(volume.shape[0],), device=volume.device).unsqueeze(1),
+            torch.randint(low=0, high=max(1, volume.shape[3] - size[2] + 1), size=(volume.shape[0],), device=volume.device).unsqueeze(1)
         ], dim=1)
 
-        dz = torch.arange(size[0].item())[None, :, None, None]
-        dy = torch.arange(size[1].item())[None, None, :, None]
-        dx = torch.arange(size[2].item())[None, None, None, :] 
+        dz = torch.arange(size[0].item(), device=volume.device)[None, :, None, None]
+        dy = torch.arange(size[1].item(), device=volume.device)[None, None, :, None]
+        dx = torch.arange(size[2].item(), device=volume.device)[None, None, None, :] 
 
         z_idx = begin[:, 0][:, None, None, None] + dz
         y_idx = begin[:, 1][:, None, None, None] + dy
         x_idx = begin[:, 2][:, None, None, None] + dx
 
-        b_idx = torch.arange(volume.shape[0])[:, None, None, None]
+        b_idx = torch.arange(volume.shape[0], device=volume.device)[:, None, None, None]
 
         volume = self.volume_fill(volume, b_idx, z_idx, y_idx, x_idx)
         gt_mask = self.mask_fill(gt_mask, b_idx, z_idx, y_idx, x_idx)
@@ -137,14 +143,19 @@ class Cutout3D(nn.Module):
             raise RuntimeError(f'Cutout3D: input shape was not expected; input shape: {volume.shape}; expected shape: [B, D, H, W]')
 
         apply_transform = torch.bernoulli(
-            torch.full(size=(volume.shape[0],), fill_value=self.prob)
+            torch.full(size=(volume.shape[0],), fill_value=self.prob, device=volume.device)
         ).to(torch.bool)
 
-        num_holes = torch.randint(self.holes[0], self.holes[1] + 1, size=(volume.shape[0],))
+        num_holes = torch.randint(self.holes[0], self.holes[1] + 1, size=(volume.shape[0],), device=volume.device)
         num_holes = apply_transform * num_holes
 
         for hole_idx in range(1, self.holes[1] + 1):
-            apply = (num_holes >= hole_idx)
-            volume[apply], gt_mask[apply], gt_skel[apply] = self.cutout(volume[apply], gt_mask[apply], gt_skel[apply]) # === WARNING!!! IN-PLACE OPERATION ===
+            apply = (num_holes >= hole_idx).view(-1, 1, 1, 1)
+
+            cutted_volume, cutted_gt_mask, cutted_gt_skel = self.cutout(volume, gt_mask, gt_skel)
+
+            volume = torch.where(apply, cutted_volume, volume)
+            gt_mask = torch.where(apply, cutted_gt_mask, gt_mask)
+            gt_skel = torch.where(apply, cutted_gt_skel, gt_skel)
 
         return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel}

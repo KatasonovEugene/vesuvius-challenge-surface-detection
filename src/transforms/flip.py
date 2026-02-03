@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from src.transforms.base_tta_transform import BaseTTATransform
 
 
 class RandFlip3D(nn.Module):
@@ -37,18 +38,18 @@ class RandFlip3D(nn.Module):
             raise RuntimeError(f'RandFlip3D: input shape was not expected; input shape: {volume.shape}; expected shape: [B, D, H, W]')
 
         apply_transform = torch.bernoulli(
-            torch.full(size=(volume.shape[0],), fill_value=self.prob)
-        ).to(torch.bool)
+            torch.full(size=(volume.shape[0],), fill_value=self.prob, device=volume.device)
+        ).to(torch.bool).view(-1, 1, 1, 1)
 
         flip = lambda x : torch.flip(x, dims=[self.spatial_axis + 1])
-        volume[apply_transform] = flip(volume[apply_transform]) # === WARNING !!! IN-PLACE OPERATION ===
-        gt_mask[apply_transform] = flip(gt_mask[apply_transform])
-        gt_skel[apply_transform] = flip(gt_skel[apply_transform])
+        volume = torch.where(apply_transform, flip(volume), volume)
+        gt_mask = torch.where(apply_transform, flip(gt_mask), gt_mask)
+        gt_skel = torch.where(apply_transform, flip(gt_skel), gt_skel)
 
         return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel}
 
 
-class Flip3D(nn.Module):
+class Flip3D(BaseTTATransform):
     """
     Flips 3D input.
     Expected input shape: [B, D, H, W]
@@ -64,7 +65,7 @@ class Flip3D(nn.Module):
 
         self.spatial_axis = spatial_axis
 
-    def forward(self, volume, gt_mask=None, gt_skel=None, **batch):
+    def forward(self, *, volume, gt_mask=None, gt_skel=None, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
@@ -94,7 +95,7 @@ class Flip3D(nn.Module):
         return result
 
 
-    def detransform(self, logits, gt_mask=None, gt_skel=None, **batch):
+    def detransform(self, *, logits, gt_mask=None, gt_skel=None, **batch):
         """
         Args:
             logits (Tensor): rotated logits tensor.

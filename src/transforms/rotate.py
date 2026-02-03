@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from src.transforms.base_tta_transform import BaseTTATransform
 
 
 class RandRotate90_3D(nn.Module):
@@ -28,8 +29,7 @@ class RandRotate90_3D(nn.Module):
         self.spatial_axes = spatial_axes
 
     def rotate90(self, data):
-        data = torch.rot90(data, k=1, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
-        return data
+        return torch.rot90(data, k=1, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
 
     def forward(self, volume, gt_mask, gt_skel, **batch):
         """
@@ -47,22 +47,22 @@ class RandRotate90_3D(nn.Module):
             raise RuntimeError(f'RandRotate90_3D: input shape was not expected; input shape: {volume.shape}; expected shape: [B, D, H, W]')
 
         apply_transform = torch.bernoulli(
-            torch.full(size=(volume.shape[0],), fill_value=self.prob)
+            torch.full(size=(volume.shape[0],), fill_value=self.prob, device=volume.device)
         ).to(torch.bool)
 
-        koefs = torch.randint(1, self.max_k + 1, size=(volume.shape[0],))
+        koefs = torch.randint(1, self.max_k + 1, size=(volume.shape[0],), device=volume.device)
         koefs = apply_transform * koefs
 
         for rotate_num in range(1, self.max_k + 1):
-            apply = (koefs >= rotate_num)
-            volume[apply] = self.rotate90(volume[apply]) # === WARNING!!! IN-PLACE OPERATION ===
-            gt_mask[apply] = self.rotate90(gt_mask[apply])
-            gt_skel[apply] = self.rotate90(gt_skel[apply])
+            apply = (koefs >= rotate_num).view(-1, 1, 1, 1)
+            volume = torch.where(apply, self.rotate90(volume), volume)
+            gt_mask = torch.where(apply, self.rotate90(gt_mask), gt_mask)
+            gt_skel = torch.where(apply, self.rotate90(gt_skel), gt_skel)
 
         return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel}
 
 
-class Rotate90_3D(nn.Module):
+class Rotate90_3D(BaseTTATransform):
     """
     Rotate 3D input on 90*k degrees.
 
@@ -88,7 +88,7 @@ class Rotate90_3D(nn.Module):
         self.k = k
         self.spatial_axes = spatial_axes
 
-    def forward(self, volume, gt_mask=None, gt_skel=None, **batch):
+    def forward(self, *, volume, gt_mask=None, gt_skel=None, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
@@ -117,7 +117,7 @@ class Rotate90_3D(nn.Module):
 
         return result
 
-    def detransform(self, logits, gt_mask=None, gt_skel=None, **batch):
+    def detransform(self, *, logits, gt_mask=None, gt_skel=None, **batch):
         """
         Args:
             logits (Tensor): rotated logits tensor.
