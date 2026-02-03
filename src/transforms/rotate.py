@@ -25,7 +25,7 @@ class RandRotate90_3D(nn.Module):
         super().__init__()
 
         self.prob = min(1.0, max(0.0, prob))
-        self.possible_k = torch.tensor(possible_k)
+        self.register_buffer('possible_k', torch.tensor(possible_k))
         self.max_k = max(possible_k)
         self.spatial_axes = spatial_axes
 

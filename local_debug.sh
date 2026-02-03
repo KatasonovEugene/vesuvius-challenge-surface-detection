@@ -1,6 +1,6 @@
 python3 train.py \
     -cn=debug \
-    model=nnunet \
+    lr_scheduler=poly \
     trainer.override=True \
     dataloader.batch_size=2 \
     dataloader.num_workers=0 \

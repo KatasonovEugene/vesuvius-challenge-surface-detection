@@ -6,7 +6,7 @@ class PolyScheduler(_LRScheduler):
         self.max_epochs = max_epochs
         self.power = power
         self.min_lr = min_lr
-        super(self).__init__(optimizer, last_epoch)
+        super().__init__(optimizer, last_epoch)
 
     def get_lr(self):
         factor = max(0, (1 - self.last_epoch) / self.max_epochs) ** self.power
