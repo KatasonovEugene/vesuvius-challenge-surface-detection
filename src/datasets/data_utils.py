@@ -75,7 +75,7 @@ def get_dataloaders(config, device):
             drop_last=(dataset_partition == "train"),
             shuffle=(dataset_partition == "train"),
             worker_init_fn=set_worker_seed,
-            batch_size=config.dataloader.batch_size
+            batch_size=config.dataloader.batch_size,
         )
         if dataset_partition != "train":
             kwargs.update(
