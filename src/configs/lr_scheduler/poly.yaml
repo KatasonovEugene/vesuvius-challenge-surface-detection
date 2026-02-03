@@ -1,0 +1,4 @@
+_target_: src.lr_scheduler.PolyScheduler
+max_epochs: null
+power: 0.9
+min_lr: 1e-6

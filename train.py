@@ -43,6 +43,8 @@ def main(config):
 
     if 'steps' in config.lr_scheduler:
         config.lr_scheduler['steps'] = config.trainer.n_epochs * epoch_len
+    if 'max_epochs' in config.lr_scheduler:
+        config.lr_scheduler['max_epochs'] = config.trainer.n_epochs
 
     lr_scheduler = instantiate(config.lr_scheduler, optimizer=optimizer)
 
