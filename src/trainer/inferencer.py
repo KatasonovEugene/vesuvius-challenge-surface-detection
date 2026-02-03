@@ -155,13 +155,8 @@ class Inferencer(BaseTrainer):
                 metrics.update(met.name, met(**batch))
 
         batch_size = batch['outputs'].shape[0]
-        current_id = batch_idx * batch_size
-
         batch = self.post_process_batch(batch)
         for i in range(batch_size):
-            # clone because of
-            # https://github.com/pytorch/pytorch/issues/1995
-
             post_processed_sample = batch["outputs"][i].clone()
             output_image_id = batch['image_id'][i]
 

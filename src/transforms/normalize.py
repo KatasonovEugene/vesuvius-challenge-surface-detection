@@ -21,23 +21,14 @@ class Normalize3D(nn.Module):
         """
         super().__init__()
 
-        if isinstance(mean, tuple) and len(mean) == 1:
-            mean = mean[0]
-        if isinstance(std, tuple) and len(std) == 1:
-            std = std[0]
+        mean = list(mean) if isinstance(mean, tuple) else [mean]
+        std = list(std) if isinstance(std, tuple) else [std]
 
-        if isinstance(mean, tuple) != isinstance(std, tuple):
-            raise TypeError('Normalize3D: You should provide either both or none of mean and std in tuple format')
-        if isinstance(mean, tuple) and len(mean) != len(std):
-            raise ValueError('Normalize3D: You should provide both mean and std with equal len in tuple format')
+        if len(mean) != len(std):
+            raise ValueError('Normalize3D: mean and std must have the same length')
 
-        if isinstance(mean, tuple):
-            mean = torch.tensor(mean)
-        if isinstance(std, tuple):
-            std = torch.tensor(std)
-
-        self.mean = mean
-        self.std = std
+        self.register_buffer('mean', torch.tensor(mean).view(1, -1, 1, 1))
+        self.register_buffer('std', torch.tensor(std).view(1, -1, 1, 1))
 
     def forward(self, volume, **batch):
         if volume.dim() != 4:

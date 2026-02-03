@@ -12,14 +12,14 @@ defaults:
 
 trainer:
   log_step: 10
-  n_epochs: 100
-  epoch_len: 500
+  n_epochs: 50
+  epoch_len: 1000
   device_tensors: ["volume", "gt_mask", "gt_skel"]
   resume_from: null
   from_pretrained: null
   device: auto
   override: False
-  monitor: "min val_dice_loss"
+  monitor: "min val_loss"
   save_period: 5
   early_stop: ${trainer.n_epochs}
   save_dir: "saved"

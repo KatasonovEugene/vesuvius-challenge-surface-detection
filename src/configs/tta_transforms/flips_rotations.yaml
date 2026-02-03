@@ -1,0 +1,21 @@
+flip1:
+  _target_: src.transforms.Flip3D
+  spatial_axis: 0 # D
+flip2:
+  _target_: src.transforms.Flip3D
+  spatial_axis: 1 # H
+flip3:
+  _target_: src.transforms.Flip3D
+  spatial_axis: 2 # W
+rot90:
+  _target_: src.transforms.Rotate90_3D
+  k: 1
+  spatial_axes: [1, 2]
+rot180:
+  _target_: src.transforms.Rotate90_3D
+  k: 2
+  spatial_axes: [1, 2]
+rot270:
+  _target_: src.transforms.Rotate90_3D
+  k: 3
+  spatial_axes: [1, 2]

@@ -21,13 +21,13 @@ class RandSpatialCrop3D(nn.Module):
     def forward(self, volume, gt_mask, gt_skel, **batch):
         """
         Args:
-            volume (Tensor): volume tensor.
-            gt_mask (Tensor): ground truth mask tensor.
-            gt_skel (Tensor): ground truth skeleton tensor.
+            volume (numpy array): volume numpy array.
+            gt_mask (numpy array): ground truth mask numpy array.
+            gt_skel (numpy array): ground truth skeleton numpy array.
         Returns:
-            volume (Tensor): randomly cropped volume tensor.
-            gt_mask (Tensor): randomly cropped ground truth mask tensor.
-            gt_skel (Tensor): randomly cropped ground truth skeleton tensor.
+            volume (numpy array): randomly cropped volume numpy array.
+            gt_mask (numpy array): randomly cropped ground truth mask numpy array.
+            gt_skel (numpy array): randomly cropped ground truth skeleton numpy array.
         """
 
         if volume.ndim != 4:
