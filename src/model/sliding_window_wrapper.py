@@ -35,7 +35,7 @@ class SlidingWindowWrapper(nn.Module):
                     overlap=self.overlap,
                     mode=self.mode
                 )
-                return {'logits': logits}
+                return {'logits': logits, 'outputs': None}
 
     def state_dict(self, *args, **kwargs):
         return self.model.state_dict(*args, **kwargs)

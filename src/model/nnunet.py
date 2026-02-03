@@ -30,4 +30,7 @@ class nnUNetDetector(nn.Module):
     def forward(self, volume, **batch):
         volume = volume.unsqueeze(1)
         logits = self.backbone(volume)    # (B, 2, D, H, W)
-        return {'logits': logits}
+        if self.training:
+            return {'logits': logits[:, 0], "outputs": logits}
+        else:
+            return {'logits': logits, "outputs": None}
