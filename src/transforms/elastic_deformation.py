@@ -62,7 +62,7 @@ class ElasticDeformation(nn.Module):
 
         apply_transform = torch.bernoulli(
             torch.full(size=(volume.shape[0],), fill_value=self.prob, device=volume.device)
-        ).to(torch.bool)
+        ).to(torch.bool).view(-1, 1, 1, 1)
 
         B, D, H, W = volume.shape
         device = volume.device
@@ -93,8 +93,8 @@ class ElasticDeformation(nn.Module):
         gt_mask_changed = gt_mask_changed.round().to(dtype=gt_mask.dtype)
         gt_skel_changed = gt_skel_changed.round().to(dtype=gt_skel.dtype)
 
-        volume[apply_transform] = volume_changed[apply_transform] # === WARNING!!! IN-PLACE OPERATION ===
-        gt_mask[apply_transform] = gt_mask_changed[apply_transform]
-        gt_skel[apply_transform] = gt_skel_changed[apply_transform]
+        volume = torch.where(apply_transform, volume_changed, volume)
+        gt_mask = torch.where(apply_transform, gt_mask_changed, gt_mask)
+        gt_skel = torch.where(apply_transform, gt_skel_changed, gt_skel)
 
         return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel}
