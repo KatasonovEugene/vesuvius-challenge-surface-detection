@@ -37,9 +37,9 @@ class RandShiftIntensity3D(nn.Module):
 
         apply_transform = torch.bernoulli(
             torch.full(size=(volume.shape[0],), fill_value=self.prob, device=volume.device)
-        ).to(volume.dtype)
+        ).to(dtype=volume.dtype, device=volume.device)
         delta = torch.normal(mean=0.0, std=self.offsets, size=[volume.shape[0]], device=volume.device, dtype=volume.dtype)
 
-        volume = volume + apply_transform * delta.view(-1, 1, 1, 1)
+        volume = volume + apply_transform.view(-1, 1, 1, 1) * delta.view(-1, 1, 1, 1)
 
         return {'volume': volume}
