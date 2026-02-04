@@ -149,13 +149,13 @@ class Inferencer(BaseTrainer):
             batch['logits'] /= samples_num
 
         batch['outputs'] = torch.nn.functional.softmax(batch['logits'], dim=1)[:, 1]
+        batch = self.post_process_batch(batch)
 
         if metrics is not None and self.metrics is not None:
             for met in self.metrics["inference"]:
-                metrics.update(met.name, met(**batch))
+                metrics.update(met.name, met(**batch)) # make sure metric works with 'outputs'
 
         batch_size = batch['outputs'].shape[0]
-        batch = self.post_process_batch(batch)
         for i in range(batch_size):
             post_processed_sample = batch["outputs"][i].clone()
             output_image_id = batch['image_id'][i]

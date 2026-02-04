@@ -2,5 +2,5 @@ val:
   _target_: src.datasets.VesuviusDataset
   part: 'val'
   val_size: 0.01
-  override: False
+  override: True
   instance_transforms: ${transforms.instance_transforms.inference}

@@ -13,6 +13,14 @@ train:
     b_min: 0
     b_max: 1
     clip: False
+  gamma:
+    _target_: src.transforms.RandomInstanceGammaShift3D
+    prob: 0.5
+    gamma_range: [0.9, 1.1]
+  contrast:
+    _target_: src.transforms.RandomContrast3D
+    prob: 0.5
+    contrast_range: [0.9, 1.1]
   normalize:
     _target_: src.transforms.Normalize3D
     mean: 0.326182128354465

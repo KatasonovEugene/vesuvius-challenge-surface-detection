@@ -9,3 +9,5 @@ from src.transforms.cutout import Cutout3D
 from src.transforms.skeletonize import Skeletonize
 from src.transforms.to_torch import ToTorch
 from src.transforms.elastic_deformation import ElasticDeformation
+from src.transforms.contrast import RandomContrast3D
+from src.transforms.gamma import RandomGammaShift3D, RandomInstanceGammaShift3D
