@@ -168,9 +168,14 @@ class Inferencer(BaseTrainer):
             if self.save_path is not None:
                 tiff.imwrite(self.save_path / part / f'{output_image_id}.tif', post_processed_sample.cpu().numpy())
 
+        if self.evaluation_metrics:
+            print(f'Batch: {batch_idx}. Metric accumulated results:')
+            for key, value in self.evaluation_metrics.result().items():
+                print(f"    {key:15s}: {value}")
+
         return batch
 
-    
+
     def apply_batch_transforms(self, transforms, batch):
         if transforms is not None:
             for transform_name in transforms.keys():
