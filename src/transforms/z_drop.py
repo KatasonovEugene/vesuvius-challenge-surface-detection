@@ -55,7 +55,10 @@ class ZDrop3D(nn.Module):
         nearest_idx = torch.where(dist_left <= dist_right, left_idx, right_idx)
         return nearest_idx.long().clamp(0, D - 1).unsqueeze(-1)
 
-    def _fill_with_zero(self, tensor, mask):
+    def _fill_with_zero(self, tensor, mask, keep_unlabeled=False):
+        if keep_unlabeled:
+            unlabeled_mask = (tensor == 2)
+            mask = mask | unlabeled_mask
         return tensor * mask
 
     def _fill_with_nearest_neighbor(self, tensor, neighbor_map, apply_aug):
@@ -89,7 +92,7 @@ class ZDrop3D(nn.Module):
 
         for tensor_name, tensor in old_tensors.items():
             if self.fill_mode == 'zero':
-                new_tensors[tensor_name] = self._fill_with_zero(tensor, zero_mask)
+                new_tensors[tensor_name] = self._fill_with_zero(tensor, zero_mask, keep_unlabeled=(tensor_name == 'gt_mask'))
 
             elif self.fill_mode == 'neighbor':
                 new_tensors[tensor_name] = self._fill_with_nearest_neighbor(tensor, neighbor_map, apply_aug)
