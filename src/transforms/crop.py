@@ -18,7 +18,7 @@ class RandSpatialCrop3D(nn.Module):
 
         self.size = size
 
-    def forward(self, volume, gt_mask, gt_skel, **batch):
+    def forward(self, volume, gt_mask, gt_skel=None, **batch):
         """
         Args:
             volume (numpy array): volume numpy array.
@@ -52,6 +52,10 @@ class RandSpatialCrop3D(nn.Module):
         crop = lambda x : x[b_idx, z_idx, y_idx, x_idx]
         volume = crop(volume)
         gt_mask = crop(gt_mask)
-        gt_skel = crop(gt_skel)
+        if gt_skel is not None:
+            gt_skel = crop(gt_skel)
 
-        return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel}
+        result = {'volume': volume, 'gt_mask': gt_mask}
+        if gt_skel is not None: 
+            result['gt_skel'] = gt_skel
+        return result

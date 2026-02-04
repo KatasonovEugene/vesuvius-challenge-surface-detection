@@ -1,6 +1,8 @@
 import torch
+import numpy as np
 from torch import nn
 from src.transforms.base_tta_transform import BaseTTATransform
+from scipy.ndimage import affine_transform
 
 
 class RandRotate90_3D(nn.Module):
@@ -147,3 +149,100 @@ class Rotate90_3D(BaseTTATransform):
             result['gt_skel'] = gt_skel
 
         return result
+
+
+class RandInstanceSmallRotate3D(nn.Module):
+    """
+    Randomly rotates 3D input.
+
+    Expected input shape: [1, D, H, W]
+    """
+
+    def __init__(self, prob=0.5, angle_z_range=(-10, 10), angle_y_range=(-10, 10), angle_x_range=(-10, 10)):
+        """
+        Args:
+            prob (float):
+                rotate is applied with given probability
+            angle_range (tuple):
+                The range of possible rotation angles in degrees.
+        """
+        super().__init__()
+
+        self.prob = min(1.0, max(0.0, prob))
+        self.angle_x_range = angle_x_range
+        self.angle_y_range = angle_y_range
+        self.angle_z_range = angle_z_range
+
+
+    def get_rotation_matrix(self, angles):
+        rx, ry, rz = angles
+
+        cosx = np.cos(rx)
+        sinx = np.sin(rx)
+        cosy = np.cos(ry)
+        siny = np.sin(ry)
+        cosz = np.cos(rz)
+        sinz = np.sin(rz)
+
+        rot_x = np.array([[1, 0, 0],
+                          [0, cosx, -sinx],
+                          [0, sinx, cosx]])
+
+        rot_y = np.array([[cosy, 0, siny],
+                          [0, 1, 0],
+                          [-siny, 0, cosy]])
+
+        rot_z = np.array([[cosz, -sinz, 0],
+                          [sinz, cosz, 0],
+                          [0, 0, 1]])
+
+        return rot_z @ rot_y @ rot_x
+
+    def forward(self, volume, gt_mask, **batch):
+        """
+        Args:
+            volume (numpy array): volume tensor.
+            gt_mask (numpy array): ground truth mask tensor.
+        Returns:
+            volume (numpy array): randomly rotated volume tensor.
+            gt_mask (numpy array): randomly rotated ground truth mask tensor.
+        """
+
+        if volume.ndim != 4 or volume.shape[0] != 1:
+            raise RuntimeError(f'RandInstanceSmallRotate3D: input shape was not expected; input shape: {volume.shape}; expected shape: [1, D, H, W]')
+
+        apply_transform = np.random.rand() < self.prob
+
+        if not apply_transform:
+            return {'volume': volume, 'gt_mask': gt_mask}
+
+        angles = np.radians([
+            np.random.uniform(self.angle_x_range[0], self.angle_x_range[1]),
+            np.random.uniform(self.angle_y_range[0], self.angle_y_range[1]),
+            np.random.uniform(self.angle_z_range[0], self.angle_z_range[1])
+        ])
+        rotation_matrix = self.get_rotation_matrix(angles)
+        inverted_rotation_matrix = np.linalg.inv(rotation_matrix)
+
+        center = np.array(volume.shape[1:], dtype=np.float64) / 2.0
+        offset = list(center - inverted_rotation_matrix @ center)
+
+        volume = affine_transform(
+            volume[0],
+            inverted_rotation_matrix,
+            offset=offset,
+            order=1,
+            mode='constant',
+            cval=0.0
+        )[None]
+
+        gt_mask = affine_transform(
+            gt_mask[0],
+            inverted_rotation_matrix,
+            offset=offset,
+            order=0,
+            mode='constant',
+            cval=2
+        )[None]
+
+        return {'volume': volume, 'gt_mask': gt_mask}
