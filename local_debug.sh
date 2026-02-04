@@ -1,6 +1,5 @@
 python3 train.py \
     -cn=debug \
-    lr_scheduler=poly \
     trainer.override=True \
     dataloader.batch_size=2 \
     dataloader.num_workers=0 \
@@ -8,3 +7,4 @@ python3 train.py \
     datasets.val.override=True \
     datasets.train.val_size=0.5 \
     datasets.val.val_size=0.5 \
+    $@

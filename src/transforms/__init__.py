@@ -11,3 +11,4 @@ from src.transforms.to_torch import ToTorch
 from src.transforms.elastic_deformation import ElasticDeformation
 from src.transforms.contrast import RandomContrast3D
 from src.transforms.gamma import RandomGammaShift3D, RandomInstanceGammaShift3D
+from src.transforms.z_drop import ZDrop3D
