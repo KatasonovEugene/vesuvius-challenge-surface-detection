@@ -159,29 +159,25 @@ def compute_leaderboard_score(
     ign = _build_ignore_mask(gt_raw, ignore_mask=ignore_mask, ignore_label=ignore_label)
     n_ignore = int(ign.sum())
 
-    # Apply ignore: neutralize by setting both PR and GT to background at ignored voxels
-    # (Done on float/int volumes before any binarization or topology)
-    pr_eval = np.where(ign, 0, pr_raw)
-    gt_eval = np.where(ign, 0, gt_raw)
-
     # 1) Binarize once for all metrics (threshold=None => legacy "!= 0")
-    pr_bin = _nan_safe_binarize(pr_eval, threshold=fg_threshold)
-    gt_bin = _nan_safe_binarize(gt_eval, threshold=fg_threshold)
+    # Apply ignore directly on binary masks to avoid extra full-size float copies.
+    pr_bin = _nan_safe_binarize(pr_raw, threshold=fg_threshold)
+    gt_bin = _nan_safe_binarize(gt_raw, threshold=fg_threshold)
+    if n_ignore > 0:
+        pr_bin[ign] = False
+        gt_bin[ign] = False
 
     # 1a) Topology (higher better): invert so FG=0, BG=1
     #     This makes H0 == foreground components (via sublevel filtration).
-    topo_pr = (~pr_bin).astype(np.uint8)
-    topo_gt = (~gt_bin).astype(np.uint8)
-
     # HARD-CODED: tile TopoScore into 8 subchunks (half along each axis) to reduce RAM.
     # We only aggregate counts and apply weights once, to preserve semantics.
     _SPLITS = (2, 2, 2)
-    slices = _octant_slices(topo_pr.shape, _SPLITS)
+    slices = _octant_slices(pr_bin.shape, _SPLITS)
     tile_reports: List[TopoReport] = []
     for zs, ys, xs in slices:
         tr = TopoScore.compute(
-            predictions=topo_pr[zs, ys, xs],
-            labels=topo_gt[zs, ys, xs],
+            predictions=(~pr_bin[zs, ys, xs]).astype(np.uint8, copy=False),
+            labels=(~gt_bin[zs, ys, xs]).astype(np.uint8, copy=False),
             dims=dims,
             weights=None,  # weights applied once after aggregation
         )

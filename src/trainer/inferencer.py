@@ -77,7 +77,7 @@ class Inferencer(BaseTrainer):
         self.metrics = metrics
         if self.metrics is not None:
             self.evaluation_metrics = MetricTracker(
-                *[m.name for m in self.metrics["inference"]],
+                *[key for met in self.metrics["inference"] for key in met.keys_full_list()],
                 writer=None,
             )
         else:
@@ -153,7 +153,12 @@ class Inferencer(BaseTrainer):
 
         if metrics is not None and self.metrics is not None:
             for met in self.metrics["inference"]:
-                metrics.update(met.name, met(**batch)) # make sure metric works with 'outputs'
+                metric_result = met(**batch) # make sure metric works with 'outputs'
+                if isinstance(metric_result, dict):
+                    for key in metric_result.keys():
+                        metrics.update(met.name + '_' + key, metric_result[key])
+                else:
+                    metrics.update(met.name, metric_result)
 
         batch_size = batch['outputs'].shape[0]
         for i in range(batch_size):

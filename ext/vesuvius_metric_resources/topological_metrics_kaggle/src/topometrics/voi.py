@@ -97,20 +97,28 @@ def compute_voi_metrics(
     if connectivity not in (6, 18, 26):
         raise ValueError(f"3D connectivity must be one of (6, 18, 26); got {connectivity}")
 
-    # Nan-safe arrays
-    gt_arr = np.nan_to_num(np.asarray(labels), nan=0.0)
-    pr_arr = np.nan_to_num(np.asarray(predictions), nan=0.0)
+    # Nan-safe arrays (avoid extra copies where possible)
+    gt_arr = np.asarray(labels)
+    pr_arr = np.asarray(predictions)
     _ensure_3d_same_shape(pr_arr, gt_arr)
+    gt_arr = np.nan_to_num(gt_arr, nan=0.0, copy=False)
+    pr_arr = np.nan_to_num(pr_arr, nan=0.0, copy=False)
 
-    # Build and apply ignore mask
+    # Build ignore mask
     ign = _build_ignore_mask(gt_arr, ignore_mask=ignore_mask, ignore_label=ignore_label)
-    if ign.any():
-        gt_arr = np.where(ign, 0, gt_arr)
-        pr_arr = np.where(ign, 0, pr_arr)
 
     # Binary foreground (supports bool input as well)
-    gt_bin = (gt_arr != 0) if gt_arr.dtype != bool else gt_arr
-    pr_bin = (pr_arr != 0) if pr_arr.dtype != bool else pr_arr
+    gt_bin = gt_arr if gt_arr.dtype == bool else (gt_arr != 0)
+    pr_bin = pr_arr if pr_arr.dtype == bool else (pr_arr != 0)
+
+    # Apply ignore directly on binary masks to avoid full-size numeric copies
+    if ign.any():
+        if gt_bin is gt_arr:
+            gt_bin = gt_bin.copy()
+        if pr_bin is pr_arr:
+            pr_bin = pr_bin.copy()
+        gt_bin[ign] = False
+        pr_bin[ign] = False
 
     # Early out if nothing remains
     union = gt_bin | pr_bin
@@ -126,13 +134,14 @@ def compute_voi_metrics(
 
     gt_use = gt_bin[slc] if use_crop else gt_bin
     pr_use = pr_bin[slc] if use_crop else pr_bin
+    union_use = union[slc] if use_crop else union
 
     # Connected components (3D only)
     gt_lab = cc3d.connected_components(gt_use.astype(np.uint8), connectivity=connectivity)
     pr_lab = cc3d.connected_components(pr_use.astype(np.uint8), connectivity=connectivity)
 
     if use_union_mask:
-        m = (gt_lab > 0) | (pr_lab > 0)
+        m = union_use
         a = gt_lab[m]
         b = pr_lab[m]
         n_considered = int(m.sum())

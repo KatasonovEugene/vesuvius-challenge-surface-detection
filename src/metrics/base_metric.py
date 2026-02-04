@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from typing import final
 
 
 class BaseMetric:
@@ -20,3 +21,15 @@ class BaseMetric:
         Can use external functions (like TorchMetrics) or custom ones.
         """
         raise NotImplementedError()
+
+
+    def getKeys(self):
+        """
+        Returns list of metric keys if __call__ returns dict
+        """
+        return [""]
+
+
+    @final
+    def keys_full_list(self):
+        return [self.name + "_" + key if key else self.name for key in self.getKeys()]
