@@ -90,7 +90,7 @@ class VesuviusDataset(BaseDataset):
         }
         if self.is_train:
             target_path = item['target_path']
-            target = self.load_object(target_path, np.int64)
+            target = self.load_object(target_path, np.int8)
             instance_data.update({
                 'gt_mask': target,
                 'gt_skel': target,

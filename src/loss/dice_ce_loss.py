@@ -33,14 +33,11 @@ class DiceCELoss(nn.Module):
         for ignore_id in self.ignore_class_ids:
             valid_mask &= (y_true != ignore_id)
 
-        if valid_mask.sum() == 0:
+        if not valid_mask.any():
             return torch.tensor(0.0, device=logits.device, requires_grad=True)
 
-        y_true_fixed = y_true.clone()
-        y_true_fixed[~valid_mask] = 0
-
         y_true_one_hot = F.one_hot(
-            y_true_fixed, num_classes=self.num_classes
+            torch.where(valid_mask, y_true, torch.zeros_like(y_true)).to(torch.long), num_classes=self.num_classes
         )
         y_true_one_hot = y_true_one_hot.movedim(-1, 1).float()
 
@@ -67,7 +64,7 @@ class DiceCELoss(nn.Module):
 
         ce_loss = F.cross_entropy(
             logits,
-            y_true,
+            y_true.to(torch.long),
             ignore_index=self.ce_ignore_index,
             reduction="mean",
         )

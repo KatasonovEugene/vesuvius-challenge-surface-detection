@@ -1,10 +1,6 @@
 import torch
 import torch.nn as nn
 
-
-import torch
-import torch.nn as nn
-
 class ZDrop3D(nn.Module):
     """
     drop_mode:
@@ -33,7 +29,7 @@ class ZDrop3D(nn.Module):
         self.block_size_max = block_size_max
 
     def _get_masks(self, B, D, device):
-        m_rand = (torch.rand((B, D), device=device) > self.slice_prob).float()
+        m_rand = torch.rand((B, D), device=device) > self.slice_prob
         block_sizes = torch.randint(self.block_size_min, self.block_size_max + 1, (B,), device=device)
         max_starts = D - block_sizes
         start_indices = torch.floor(torch.rand(B, device=device) * max_starts).long()
@@ -42,7 +38,7 @@ class ZDrop3D(nn.Module):
             (range_tensor >= start_indices.unsqueeze(1)) & 
             (range_tensor < (start_indices + block_sizes).unsqueeze(1))
         )
-        m_coarse = (~block_mask).float()
+        m_coarse = ~block_mask
         return m_rand, m_coarse
 
     def _compute_nearest_neighbor_map(self, mask):
@@ -60,7 +56,7 @@ class ZDrop3D(nn.Module):
         return nearest_idx.long().clamp(0, D - 1).unsqueeze(-1)
 
     def _fill_with_zero(self, tensor, mask):
-        return tensor * mask
+        return torch.where(mask, tensor, torch.zeros_like(tensor))
 
     def _fill_with_nearest_neighbor(self, tensor, neighbor_map, apply_aug):
         B, D, H, W = tensor.shape
@@ -80,15 +76,14 @@ class ZDrop3D(nn.Module):
         elif self.drop_mode == 'coarse':
             mask = m_coarse
         elif self.drop_mode == 'combined':
-            mask = m_rand * m_coarse
+            mask = m_rand & m_coarse
 
         old_tensors = dict(volume=volume, gt_mask=gt_mask, gt_skel=gt_skel)
         new_tensors = dict()
 
         if self.fill_mode == 'zero':
-            zero_mask = torch.where(apply_aug.unsqueeze(1), mask, torch.ones_like(mask))
+            zero_mask = torch.where(apply_aug.unsqueeze(1), mask, torch.ones_like(mask, dtype=torch.bool))
             zero_mask = zero_mask.view(B, D, 1, 1)
-        
         elif self.fill_mode == 'neighbor':
             neighbor_map = self._compute_nearest_neighbor_map(mask) # [B, D]
 

@@ -9,6 +9,12 @@ from pathlib import Path
 from src.utils.io_utils import ROOT_PATH
 
 def plot_sample(volume, gt_mask, gt_skel, outputs=None, sample_idx=0, max_slices=16, name="sample_plot", **batch):
+    volume = volume.cpu().numpy()
+    gt_mask = gt_mask.cpu().numpy()
+    gt_skel = gt_skel.cpu().numpy()
+    if outputs is not None:
+        outputs = outputs.cpu().numpy()
+
     img = np.squeeze(volume[sample_idx])  # (D, H, W)
     mask = np.squeeze(gt_mask[sample_idx])  # (D, H, W)
     skel_mask = np.squeeze(gt_skel[sample_idx])  # (D, H, W)
@@ -59,6 +65,11 @@ def plot_sample(volume, gt_mask, gt_skel, outputs=None, sample_idx=0, max_slices
     plt.savefig(plot_save_path / f'{name}_{sample_idx}.png')
 
 def plot_results(gt_mask, gt_skel, outputs_probs, outputs_post_processed, sample_idx=0, max_slices=16, prefix="", name="result_plot", **batch):
+    gt_mask = gt_mask.cpu().numpy()
+    gt_skel = gt_skel.cpu().numpy()
+    outputs_probs = outputs_probs.cpu().numpy()
+    outputs_post_processed = outputs_post_processed.cpu().numpy()
+
     gt_mask = np.squeeze(gt_mask[sample_idx])  # (D, H, W)
     gt_skel = np.squeeze(gt_skel[sample_idx])  # (D, H, W)
     outputs_probs = np.squeeze(outputs_probs[sample_idx])  # (D, H, W)
