@@ -1,6 +1,6 @@
 from torch import nn
 import numpy as np
-from skimage.morphology import skeletonize, binary_closing, disk
+from skimage.morphology import skeletonize, closing, disk
 
 
 class Skeletonize(nn.Module):
@@ -21,7 +21,7 @@ class Skeletonize(nn.Module):
             slice_2d = mask[i]
 
             if slice_2d.any():
-                closed = binary_closing(slice_2d, footprint=self.selem)
+                closed = closing(slice_2d, footprint=self.selem)
                 skel_2d = skeletonize(closed)
                 skel[i] = skel_2d
             else:
