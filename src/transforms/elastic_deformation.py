@@ -29,7 +29,7 @@ class ElasticDeformation(nn.Module):
         self.sigma = sigma
 
         self.size = int(2 * math.ceil(self.sigma * 2) + 1)
-        
+
         g = torch.exp(-(torch.arange(self.size) - self.size // 2)**2 / (2 * self.sigma**2))
         g = g / g.sum()
 
