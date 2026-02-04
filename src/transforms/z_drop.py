@@ -39,7 +39,7 @@ class ZDrop3D(nn.Module):
             (range_tensor < (start_indices + block_sizes).unsqueeze(1))
         )
         m_coarse = ~block_mask
-        return m_rand, m_coarse
+        return m_rand.bool(), m_coarse.bool()
 
     def _compute_nearest_neighbor_map(self, mask):
         B, D = mask.shape
@@ -56,7 +56,7 @@ class ZDrop3D(nn.Module):
         return nearest_idx.long().clamp(0, D - 1).unsqueeze(-1)
 
     def _fill_with_zero(self, tensor, mask):
-        return torch.where(mask, tensor, torch.zeros_like(tensor))
+        return tensor * mask
 
     def _fill_with_nearest_neighbor(self, tensor, neighbor_map, apply_aug):
         B, D, H, W = tensor.shape
