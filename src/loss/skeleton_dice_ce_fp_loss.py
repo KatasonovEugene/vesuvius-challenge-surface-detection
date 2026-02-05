@@ -30,7 +30,7 @@ class SkeletonDiceCEFPLoss(nn.Module):
         self.fp_loss = FPLoss(eps=self.eps)
 
     def forward(self, logits: torch.Tensor, gt_mask: torch.Tensor, gt_skel: torch.Tensor, **batch):
-        probs = torch.softmax(logits, dim=1)
+        probs = torch.softmax(logits, dim=1)[:, 1]
         dice_ce_loss_dict = self.dice_ce_loss(gt_mask, logits, probs)
         dice_loss = dice_ce_loss_dict['dice_loss']
         ce_loss = dice_ce_loss_dict['ce_loss']
@@ -40,8 +40,8 @@ class SkeletonDiceCEFPLoss(nn.Module):
         final_loss = dice_ce_loss_dict['loss'] + self.w_skel * skel_loss + self.w_fp * fp_loss
 
         return {
-            "dice_loss": dice_loss / self.dice_ce_loss.dice_weight if self.dice_ce_loss.dice_weight > 0 else 0.0,
-            "ce_loss": ce_loss / self.dice_ce_loss.ce_weight if self.dice_ce_loss.ce_weight > 0 else 0.0,
+            "dice_loss": dice_loss,
+            "ce_loss": ce_loss,
             "skel_loss": skel_loss,
             "fp_loss": fp_loss,
             "loss": final_loss,

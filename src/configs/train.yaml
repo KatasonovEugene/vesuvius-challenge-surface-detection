@@ -25,3 +25,5 @@ trainer:
   early_stop: ${trainer.n_epochs}
   save_dir: "saved"
   seed: 1
+  log_batch_plots: True
+  view_3d_online: false

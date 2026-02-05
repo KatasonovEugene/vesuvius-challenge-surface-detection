@@ -81,7 +81,7 @@ def plot_sample(volume, gt_mask, gt_skel, outputs=None, sample_idx=0, max_slices
     if is_kaggle_env:
         plot_save_path = Path('plots')
     else:
-        plot_save_path = ROOT_PATH / 'plots'
+        plot_save_path = ROOT_PATH / 'plots' / 'last_run'
     plot_save_path.mkdir(parents=True, exist_ok=True)
 
     plt.savefig(plot_save_path / f'{name}_{sample_idx}.png')
@@ -130,7 +130,7 @@ def plot_results(gt_mask, gt_skel, outputs_probs, outputs_post_processed, sample
     if is_kaggle_env:
         plot_save_path = Path('plots')
     else:
-        plot_save_path = ROOT_PATH / 'plots'
+        plot_save_path = ROOT_PATH / 'plots' / 'last_run'
     plot_save_path.mkdir(parents=True, exist_ok=True)
 
     plt.savefig(plot_save_path / f'{prefix}_{name}_{sample_idx}.png')

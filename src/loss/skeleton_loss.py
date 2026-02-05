@@ -11,10 +11,10 @@ class SkeletonLoss(nn.Module):
         probs = torch.softmax(logits, dim=1)
 
         dims = (1, 2, 3) 
-        pred_ink_prob = probs[:, 1]
+        pred_prob = probs[:, 1]
         valid_mask = (gt_mask != 2).float()
 
-        intersection = (pred_ink_prob * gt_skel * valid_mask).sum(dim=dims)
+        intersection = (pred_prob * gt_skel * valid_mask).sum(dim=dims)
         skel_sum = (gt_skel * valid_mask).sum(dim=dims)
         has_skeleton = (skel_sum > 0).float()
         recall = (intersection + self.eps) / (skel_sum + self.eps)

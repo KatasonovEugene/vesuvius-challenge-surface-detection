@@ -8,6 +8,11 @@ class Trainer(BaseTrainer):
     Trainer class. Defines the logic of batch logging and processing.
     """
 
+    def __init__(self, *args, log_batch_plots=False, view_3d_online=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.log_batch_plots = log_batch_plots
+        self.view_3d_online = view_3d_online
+
     def process_batch(self, batch, metrics: MetricTracker):
         """
         Run batch through the model, compute metrics, compute loss,
@@ -56,12 +61,18 @@ class Trainer(BaseTrainer):
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
 
-        if not hasattr(self, 'batch_count'):
-            self.batch_count = 0
-        plot_batch(**batch, name=f'batch_plot_{self.batch_count}')
-        self.batch_count += 1
+        if self.log_batch_plots:
+            if 'outputs' not in batch:
+                batch['outputs'] = torch.softmax(batch['logits'], dim=1)[:, 1].detach()
+            if not hasattr(self, 'batch_count'):
+                self.batch_count = 0
+            plot_batch(**batch, name=f'batch_plot_{self.batch_count}')
+            self.batch_count += 1
 
-        # view_batch_3d(**batch)
+        if self.view_3d_online:
+            if 'outputs' not in batch:
+                batch['outputs'] = torch.softmax(batch['logits'], dim=1)[:, 1].detach()
+            view_batch_3d(**batch)
 
         with torch.no_grad():
             for loss_name in self.config.writer.loss_names:

@@ -20,10 +20,12 @@ class DiceCELoss(nn.Module):
         self.dice_weight = dice_weight
         self.ce_weight = ce_weight
         self.reduction = reduction
-        if not isinstance(ignore_class_ids, list):
-            ignore_class_ids = [ignore_class_ids]
 
-        self.ce_ignore_index = ignore_class_ids[0] if ignore_class_ids else -100
+        self.ignore_class_ids = ignore_class_ids
+        if not isinstance(self.ignore_class_ids, list):
+            self.ignore_class_ids = [self.ignore_class_ids]
+
+        self.ce_ignore_index = self.ignore_class_ids[0] if self.ignore_class_ids is not None else -100
         self.dice_loss = DiceLoss(
             num_classes=num_classes,
             target_class_ids=target_class_ids,
@@ -31,13 +33,15 @@ class DiceCELoss(nn.Module):
             smooth=smooth,
         )
 
-    def forward(self, y_true, logits, probs):
-        y_true = y_true.long()
+    def forward(self, logits, gt_mask, probs=None, **batch):
+        gt_mask = gt_mask.long()
+        if probs is None:
+             probs = torch.softmax(logits, dim=1)[:, 1]
 
-        dice_loss = self.dice_loss(y_true, logits, probs)['loss']
+        dice_loss = self.dice_loss(gt_mask, logits, probs)['loss']
         ce_loss = F.cross_entropy(
             logits,
-            y_true,
+            gt_mask,
             ignore_index=self.ce_ignore_index,
             reduction=self.reduction,
         )

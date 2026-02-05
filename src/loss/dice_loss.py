@@ -22,17 +22,20 @@ class DiceLoss(nn.Module):
 
         self.ce_ignore_index = self.ignore_class_ids[0] if self.ignore_class_ids else -100
 
-    def forward(self, y_true, logits, probs):
-        y_true = y_true.long()
-        valid_mask = torch.ones_like(y_true, dtype=torch.bool)
+    def forward(self, gt_mask, logits, probs=None, **batch):
+        if probs is None:
+            probs = torch.softmax(logits, dim=1)[:, 1]
+
+        gt_mask = gt_mask.long()
+        valid_mask = torch.ones_like(gt_mask, dtype=torch.bool)
         for ignore_id in self.ignore_class_ids:
-            valid_mask &= (y_true != ignore_id)
+            valid_mask &= (gt_mask != ignore_id)
 
         if not valid_mask.any():
-            return torch.tensor(0.0, device=logits.device, requires_grad=True)
+            return { 'loss': torch.tensor(0.0, device=logits.device, requires_grad=True) }
 
         y_true_one_hot = F.one_hot(
-            torch.where(valid_mask, y_true, 0), num_classes=self.num_classes
+            torch.where(valid_mask, gt_mask, 0), num_classes=self.num_classes
         )
         y_true_one_hot = y_true_one_hot.movedim(-1, 1).float()
 
