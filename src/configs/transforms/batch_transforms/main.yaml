@@ -1,12 +1,24 @@
 train:
   shift_intensity:
     _target_: src.transforms.RandShiftIntensity3D
-    offsets: 0.10
-    prob: 0.5
+    offsets: 0.07
+    prob: 0.4
+    slice_wise: false
+  slice_intensity_jitter:
+    _target_: src.transforms.RandShiftIntensity3D
+    offsets: 0.03
+    prob: 0.3
+    slice_wise: true
+  z_intensity_drift:
+    _target_: src.transforms.RandZIntensityDrift3D
+    prob: 0.3
+    scale_amplitude: [0.05, 0.15]
+    shift_amplitude: [0.0, 0.03]
+    smooth_sigma: [14, 28]
   flip1:
     _target_: src.transforms.RandFlip3D
     spatial_axis: 0 # D
-    prob: 0.5
+    prob: 0.2
   flip2:
     _target_: src.transforms.RandFlip3D
     spatial_axis: 1 # H
@@ -17,31 +29,35 @@ train:
     prob: 0.5
   rot90:
     _target_: src.transforms.RandRotate90_3D
-    prob: 0.4
+    prob: 0.5
     possible_k: [1, 3]
     spatial_axes: [1, 2] # H W
+  structured_noise:
+    _target_: src.transforms.RandAddStructuredNoise3D
+    prob: 0.3
+    alpha_range: [0.02, 0.05]
+    sigma_range: [8.0, 16.0]
   elastic_deformation:
     _target_: src.transforms.ElasticDeformation
-    prob: 0.5
+    prob: 0.2
     sigma: 9.0
     alpha_x: 10.0
     alpha_y: 10.0
-    alpha_z: 5.0
+    alpha_z: 3.0
   z_drop:
     _target_: src.transforms.ZDrop3D
-    prob: 0.4
-    slice_prob: 0.15
-    drop_mode: 'default'
-    fill_mode: 'zero'
+    prob: 0.3
+    drop_mode: 'coarse'
+    fill_mode: 'neighbor'
     block_size_min: 10
     block_size_max: 32
   cutout3d:
     _target_: src.transforms.Cutout3D
-    prob: 0.25
-    holes: [2, 5]
-    depth: [4, 12]
-    height: [24, 64]
-    width: [24, 64]
+    prob: 0.3
+    holes: [5, 8]
+    depth: [12, 24]
+    height: [30, 60]
+    width: [30, 60]
     volume_fill_mode: "null"
     mask_fill_mode: "unlabeled"
 

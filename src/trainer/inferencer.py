@@ -160,6 +160,11 @@ class Inferencer(BaseTrainer):
                 else:
                     metrics.update(met.name, metric_result)
 
+        if self.evaluation_metrics and len(self.evaluation_metrics.result()) > 0:
+            print(f'Batch: {batch_idx}. Metric accumulated results:')
+            for key, value in self.evaluation_metrics.result().items():
+                print(f"    {key:15s}: {value}")
+
         batch_size = batch['outputs'].shape[0]
         for i in range(batch_size):
             post_processed_sample = batch["outputs"][i].clone()
@@ -167,11 +172,6 @@ class Inferencer(BaseTrainer):
 
             if self.save_path is not None:
                 tiff.imwrite(self.save_path / part / f'{output_image_id}.tif', post_processed_sample.cpu().numpy())
-
-        if self.evaluation_metrics:
-            print(f'Batch: {batch_idx}. Metric accumulated results:')
-            for key, value in self.evaluation_metrics.result().items():
-                print(f"    {key:15s}: {value}")
 
         return batch
 

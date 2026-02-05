@@ -1,19 +1,19 @@
 defaults:
-  - model: segresnet
+  - model: nnunet
   - writer: wandb
   - metrics: main
   - datasets: default
   - dataloader: default
   - transforms: main
-  - loss: skeleton_dice_loss
+  - loss: nnunet_loss
   - optimizer: adamw
   - lr_scheduler: warmup_cosine
   - _self_
 
 trainer:
   log_step: 10
-  n_epochs: 50
-  epoch_len: 1000
+  n_epochs: 66
+  epoch_len: 1500
   device_tensors: ["volume", "gt_mask", "gt_skel"]
   resume_from: null
   from_pretrained: null

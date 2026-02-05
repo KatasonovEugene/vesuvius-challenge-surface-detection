@@ -1,7 +1,19 @@
 train:
+  zoom:
+    _target_: src.transforms.RandInstanceZoom3D
+    prob: 0.4
+    zoom_range_x: [0.9, 1.1]
+    zoom_range_y: [0.9, 1.1]
+    zoom_range_z: [0.95, 1.05]
   crop:
     _target_: src.transforms.RandSpatialCrop3D
     size: [160, 160, 160]
+  small_rotate:
+    _target_: src.transforms.RandInstanceSmallRotate3D
+    prob: 0.3
+    angle_x_range: [-5, 5]
+    angle_y_range: [-5, 5]
+    angle_z_range: [-10, 10]
   skeletonize:
     _target_: src.transforms.Skeletonize # skeletonize must be after crop
   to_torch:
@@ -15,12 +27,12 @@ train:
     clip: False
   gamma:
     _target_: src.transforms.RandomInstanceGammaShift3D
-    prob: 0.5
-    gamma_range: [0.9, 1.1]
+    prob: 0.3
+    gamma_range: [0.95, 1.05]
   contrast:
     _target_: src.transforms.RandomContrast3D
-    prob: 0.5
-    contrast_range: [0.9, 1.1]
+    prob: 0.3
+    contrast_range: [0.95, 1.05]
   normalize:
     _target_: src.transforms.Normalize3D
     mean: 0.326182128354465
