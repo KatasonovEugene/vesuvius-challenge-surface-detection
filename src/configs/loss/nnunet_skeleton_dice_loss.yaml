@@ -1,0 +1,7 @@
+_target_: src.loss.nnUnetLoss
+base_loss:
+  _target_: src.loss.SkeletonDiceLoss
+  num_classes: 2
+  dice_weight: 1.0
+  skel_weight: 0.5
+ds_weights: null
