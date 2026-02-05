@@ -1,3 +1,0 @@
-_target_: src.loss.DiceLoss
-num_classes: 2
-w_fp: 0.3

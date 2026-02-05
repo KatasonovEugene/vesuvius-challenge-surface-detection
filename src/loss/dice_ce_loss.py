@@ -22,7 +22,7 @@ class DiceCELoss(nn.Module):
         self.reduction = reduction
 
         self.ignore_class_ids = ignore_class_ids
-        if not isinstance(self.ignore_class_ids, list):
+        if self.ignore_class_ids is not None and not isinstance(self.ignore_class_ids, list):
             self.ignore_class_ids = [self.ignore_class_ids]
 
         self.ce_ignore_index = self.ignore_class_ids[0] if self.ignore_class_ids is not None else -100
