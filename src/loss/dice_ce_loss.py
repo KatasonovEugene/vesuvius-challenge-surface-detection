@@ -38,7 +38,7 @@ class DiceCELoss(nn.Module):
         if probs is None:
              probs = torch.softmax(logits, dim=1)[:, 1]
 
-        dice_loss = self.dice_loss(gt_mask, logits, probs)['loss']
+        dice_loss = self.dice_loss(gt_mask=gt_mask, logits=logits, probs=probs)['loss']
         ce_loss = F.cross_entropy(
             logits,
             gt_mask,

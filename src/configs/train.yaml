@@ -6,7 +6,7 @@ defaults:
   - dataloader: default
   - batch_transforms: main
   - instance_transforms: main
-  - loss: skeleton_dice_loss
+  - loss: skeleton_dice_ce_loss
   - optimizer: adamw
   - lr_scheduler: warmup_cosine
   - _self_

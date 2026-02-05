@@ -26,6 +26,8 @@ class DiceLoss(nn.Module):
         if probs is None:
             probs = torch.softmax(logits, dim=1)[:, 1]
 
+        print(probs.shape, gt_mask.shape, logits.shape)
+
         gt_mask = gt_mask.long()
         valid_mask = torch.ones_like(gt_mask, dtype=torch.bool)
         for ignore_id in self.ignore_class_ids:

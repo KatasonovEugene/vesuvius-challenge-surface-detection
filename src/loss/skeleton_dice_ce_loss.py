@@ -27,10 +27,10 @@ class SkeletonDiceCELoss(nn.Module):
 
     def forward(self, logits: torch.Tensor, gt_mask: torch.Tensor, gt_skel: torch.Tensor, **batch):
         probs = torch.softmax(logits, dim=1)[:, 1]
-        dice_ce_loss_dict = self.dice_ce_loss(gt_mask, logits, probs)
+        dice_ce_loss_dict = self.dice_ce_loss(logits=logits, gt_mask=gt_mask, probs=probs)
         dice_loss = dice_ce_loss_dict['dice_loss']
         ce_loss = dice_ce_loss_dict['ce_loss']
-        skel_loss = self.skeleton_loss(logits, gt_mask, gt_skel)['loss']
+        skel_loss = self.skeleton_loss(logits=logits, gt_mask=gt_mask, gt_skel=gt_skel)['loss']
 
         final_loss = dice_ce_loss_dict['loss'] + self.w_skel * skel_loss
 

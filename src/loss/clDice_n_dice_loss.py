@@ -25,8 +25,8 @@ class ClDiceNDiceLoss(nn.Module):
 
     def forward(self, logits: torch.Tensor, gt_mask: torch.Tensor, gt_skel: torch.Tensor, **batch):
         probs = torch.softmax(logits, dim=1)[:, 1]
-        clDice_loss = self.clDice_loss(logits, gt_mask, gt_skel)['loss']
-        dice_loss = self.dice_loss(gt_mask, logits, probs)['loss']
+        clDice_loss = self.clDice_loss(logits=logits, gt_mask=gt_mask, gt_skel=gt_skel)['loss']
+        dice_loss = self.dice_loss(gt_mask=gt_mask, logits=logits, probs=probs)['loss']
 
         final_loss = self.dice_weight * dice_loss + self.cl_weight * clDice_loss
 
