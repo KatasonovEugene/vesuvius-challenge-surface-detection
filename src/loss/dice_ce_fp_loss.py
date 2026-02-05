@@ -28,12 +28,7 @@ class DiceCeFPLoss(nn.Module):
     def forward(self, logits: torch.Tensor, gt_mask: torch.Tensor, **batch):
         probs = torch.softmax(logits, dim=1)
         dice_ce_loss_dict = self.dice_ce_loss(gt_mask, logits, probs)
-
-        pred_ink_prob = probs[:, 1]
-        valid_mask = (gt_mask != 2).float()
-        gt_bg = (gt_mask == 0).float()
-        fp_volume = pred_ink_prob * gt_bg * valid_mask
-        fp_loss = fp_volume.sum() / ((gt_bg * valid_mask).sum() + self.eps)
+        fp_loss = self.fp_loss(logits, gt_mask)['loss']
 
         final_loss = dice_ce_loss_dict['loss'] + self.w_fp * fp_loss
 
