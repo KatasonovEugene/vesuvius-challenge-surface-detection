@@ -23,8 +23,16 @@ class DiceLoss(nn.Module):
         self.ce_ignore_index = self.ignore_class_ids[0] if self.ignore_class_ids else -100
 
     def forward(self, gt_mask, logits, probs=None, **batch):
+        '''
+        gt_mask: [B, D, H, W]
+        logits: [B, C, D, H, W]
+        probs: [B, D, H, W]
+        '''
+
         if probs is None:
-            probs = torch.softmax(logits, dim=1)[:, 1]
+            probs = torch.softmax(logits, dim=1)
+        elif probs.ndim == 4:
+            probs = probs.unsqueeze(1)
 
         gt_mask = gt_mask.long()
         valid_mask = torch.ones_like(gt_mask, dtype=torch.bool)
