@@ -1,5 +1,5 @@
 import torch.nn as nn
-from monai.networks.nets import DynUNet
+from monai.networks.nets.dynunet import DynUNet
 
 
 class nnUNetDetector(nn.Module):

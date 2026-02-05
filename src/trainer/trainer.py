@@ -1,7 +1,7 @@
 import torch
 from src.metrics.tracker import MetricTracker
 from src.trainer.base_trainer import BaseTrainer
-
+from src.utils.plot_utils import plot_batch, view_batch_3d
 
 class Trainer(BaseTrainer):
     """
@@ -55,6 +55,13 @@ class Trainer(BaseTrainer):
             self.optimizer.step()
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
+
+        if not hasattr(self, 'batch_count'):
+            self.batch_count = 0
+        plot_batch(**batch, name=f'batch_plot_{self.batch_count}')
+        self.batch_count += 1
+
+        # view_batch_3d(**batch)
 
         with torch.no_grad():
             for loss_name in self.config.writer.loss_names:

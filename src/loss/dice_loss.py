@@ -1,37 +1,60 @@
 import torch
-from torch import nn
-from src.loss.dice_ce_loss import DiceCELoss
+import torch.nn as nn
+import torch.nn.functional as F
 
 
 class DiceLoss(nn.Module):
     def __init__(
         self,
-        num_classes,
-        w_fp,
+        num_classes, # without ignore class
+        target_class_ids=None,
+        ignore_class_ids=None,
+        smooth=1e-7,
     ):
         super().__init__()
         self.num_classes = num_classes
-        self.w_fp = w_fp
-        self.eps = 1e-6
-        self.dice_loss = DiceCELoss(
-            num_classes=num_classes,
-            ignore_class_ids=2,
+        self.target_class_ids = target_class_ids
+        self.ignore_class_ids = ignore_class_ids or []
+        if not isinstance(self.ignore_class_ids, list):
+            self.ignore_class_ids = [self.ignore_class_ids]
+
+        self.smooth = smooth
+
+        self.ce_ignore_index = self.ignore_class_ids[0] if self.ignore_class_ids else -100
+
+    def forward(self, y_true, logits, probs):
+        y_true = y_true.long()
+        valid_mask = torch.ones_like(y_true, dtype=torch.bool)
+        for ignore_id in self.ignore_class_ids:
+            valid_mask &= (y_true != ignore_id)
+
+        if not valid_mask.any():
+            return torch.tensor(0.0, device=logits.device, requires_grad=True)
+
+        y_true_one_hot = F.one_hot(
+            torch.where(valid_mask, y_true, 0), num_classes=self.num_classes
         )
+        y_true_one_hot = y_true_one_hot.movedim(-1, 1).float()
 
-    def forward(self, logits: torch.Tensor, gt_mask: torch.Tensor, **batch):
-        probs = torch.softmax(logits, dim=1)
-        dice_loss = self.dice_loss(gt_mask, logits, probs)
+        if self.target_class_ids is not None:
+            dims = self.target_class_ids
+            probs = probs[:, dims, ...]
+            target = y_true_one_hot[:, dims, ...]
+        else:
+            probs = probs
+            target = y_true_one_hot
 
-        pred_ink_prob = probs[:, 1]
-        valid_mask = (gt_mask != 2).float()
-        gt_bg = (gt_mask == 0).float()
-        fp_volume = pred_ink_prob * gt_bg * valid_mask
-        fp_loss = fp_volume.sum() / ((gt_bg * valid_mask).sum() + self.eps)
+        spatial_dims = list(range(2, probs.ndim))
+        reduction_dims = [0] + spatial_dims
 
-        final_loss = dice_loss + self.w_fp * fp_loss
+        valid_mask = valid_mask.unsqueeze(1)
+        probs = probs * valid_mask
+        target = target * valid_mask
 
-        return {
-            "dice_loss": dice_loss,
-            "fp_loss": fp_loss,
-            "loss": final_loss,
-        }
+        intersection = torch.sum(probs * target, dim=reduction_dims)
+        union = torch.sum(probs + target, dim=reduction_dims)
+
+        dice_score = (2.0 * intersection + self.smooth) / (union + self.smooth)
+        dice_loss = 1.0 - dice_score.mean()
+
+        return {'loss': dice_loss}

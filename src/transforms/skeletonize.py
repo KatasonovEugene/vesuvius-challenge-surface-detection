@@ -4,7 +4,7 @@ from skimage.morphology import skeletonize, closing, disk, dilation
 
 
 class Skeletonize(nn.Module):
-    def __init__(self, connect_gap=2):
+    def __init__(self, connect_gap=0):
         super().__init__()
 
         self.selem = disk(connect_gap)
