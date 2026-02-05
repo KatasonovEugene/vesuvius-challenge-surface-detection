@@ -1,12 +1,34 @@
 import matplotlib
 matplotlib.use('Agg')
 
+import napari
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 from pathlib import Path
 
 from src.utils.io_utils import ROOT_PATH
+
+def view3d(volume, gt_mask, gt_skel, outputs=None, sample_idx=0, **batch):
+    volume = volume.cpu().numpy()
+    gt_mask = gt_mask.cpu().numpy()
+    gt_skel = gt_skel.cpu().numpy()
+    if outputs is not None:
+        outputs = outputs.cpu().numpy()
+
+    viewer = napari.Viewer()
+    viewer.add_image(gt_skel[sample_idx], name='GT Skeleton')
+    viewer.add_image(gt_mask[sample_idx], name='GT Mask')
+    viewer.add_image(volume[sample_idx], name='Volume')
+    if outputs is not None:
+        viewer.add_image(outputs[sample_idx], name='Outputs')
+    viewer.dims.ndisplay = 3
+    napari.run()
+
+def view_batch_3d(volume, gt_mask, gt_skel, outputs=None, **batch):
+    for i in range(volume.shape[0]):
+        view3d(volume, gt_mask, gt_skel, outputs=outputs, sample_idx=i)
+
 
 def plot_sample(volume, gt_mask, gt_skel, outputs=None, sample_idx=0, max_slices=16, name="sample_plot", **batch):
     volume = volume.cpu().numpy()
