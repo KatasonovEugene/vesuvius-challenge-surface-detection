@@ -31,7 +31,7 @@ class nnUnetLoss(nn.Module):
 
     def forward(self, logits: torch.Tensor, outputs: torch.Tensor, gt_mask: torch.Tensor, gt_skel: torch.Tensor, **batch):
         if outputs is None:
-            return self.base_loss(logits, gt_mask, gt_skel)
+            return self.base_loss(logits=logits, gt_mask=gt_mask, gt_skel=gt_skel)
 
         n_heads = outputs.shape[1]
         if self.ds_weights is None:
@@ -39,28 +39,24 @@ class nnUnetLoss(nn.Module):
             total_w = sum(weights)
             self.ds_weights = [w / total_w for w in weights]
 
-        accum_results = {"dice_loss": 0, "skel_loss": 0, "fp_loss": 0, "loss": 0}
+        accum_results = {}
 
         for i in range(n_heads):
-            l_i = outputs[:, i]
-            
-            if l_i.shape[2:] != gt_mask.shape[1:]:
-                gt_m_i = self._nearest_resize_int(gt_mask.unsqueeze(1), size=l_i.shape[2:]).squeeze(1)
-                gt_s_i = self._nearest_resize_int(gt_skel.unsqueeze(1), size=l_i.shape[2:]).squeeze(1)
+            logits_i = outputs[:, i]
+
+            if logits_i.shape[2:] != gt_mask.shape[1:]:
+                gt_mask_i = self._nearest_resize_int(gt_mask.unsqueeze(1), size=logits_i.shape[2:]).squeeze(1)
+                gt_skel_i = self._nearest_resize_int(gt_skel.unsqueeze(1), size=logits_i.shape[2:]).squeeze(1)
             else:
-                gt_m_i, gt_s_i = gt_mask, gt_skel
+                gt_mask_i, gt_skel_i = gt_mask, gt_skel
 
-            result_i = self.base_loss(l_i, gt_m_i, gt_s_i)
-            d_l, s_l, f_l = result_i['dice_loss'], result_i['skel_loss'], result_i['fp_loss']
+            result_i = self.base_loss(logits=logits_i, gt_mask=gt_mask_i, gt_skel=gt_skel_i)
 
-            w = self.ds_weights[i]
-            accum_results["dice_loss"] += d_l * w
-            accum_results["skel_loss"] += s_l * w
-            accum_results["fp_loss"] += f_l * w
-        
-        accum_results["loss"] = (
-            accum_results["dice_loss"] + 
-            self.base_loss.w_srec * accum_results["skel_loss"] + 
-            self.base_loss.w_fp * accum_results["fp_loss"]
-        )
+            weight = self.ds_weights[i]
+            if accum_results == {}:
+                accum_results = {key: value * weight for key, value in result_i.items()}
+            else:
+                for key in result_i:
+                    accum_results[key] += result_i[key] * weight
+
         return accum_results
