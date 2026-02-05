@@ -20,6 +20,8 @@ class DiceCELoss(nn.Module):
         self.dice_weight = dice_weight
         self.ce_weight = ce_weight
         self.reduction = reduction
+        if not isinstance(ignore_class_ids, list):
+            ignore_class_ids = [ignore_class_ids]
 
         self.ce_ignore_index = ignore_class_ids[0] if ignore_class_ids else -100
         self.dice_loss = DiceLoss(
