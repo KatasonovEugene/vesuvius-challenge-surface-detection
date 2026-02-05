@@ -126,7 +126,7 @@ class Inferencer(BaseTrainer):
         outputs = self.model(**batch)
         batch.update(outputs)
 
-        if self.tta_transforms is not None:
+        if self.tta_transforms:
             samples_num = 1
             for transform_name in self.tta_transforms.keys():
                 batch_copy = copy.deepcopy(batch)
@@ -145,7 +145,7 @@ class Inferencer(BaseTrainer):
             batch['logits'] /= samples_num
 
         if self.is_ensemble:
-            batch['outputs'] = batch['probs']
+            batch['outputs'] = batch['probs'][:, 1]
         else:
             batch['outputs'] = F.softmax(batch['logits'], dim=1)[:, 1]
 

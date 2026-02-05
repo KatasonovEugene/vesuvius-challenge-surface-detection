@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from monai.inferers.utils import sliding_window_inference
+from src.model.ensemble import Ensemble
 
 
 class SlidingWindowWrapper(nn.Module):
@@ -18,16 +19,20 @@ class SlidingWindowWrapper(nn.Module):
         self.sw_batch_size = sw_batch_size
         self.overlap = overlap
         self.mode = mode
+        self.is_ensemble = isinstance(self.model, Ensemble)
 
     def _predictor(self, volume):
-        return self.model(volume=volume.squeeze(1))['logits']
+        preds = self.model(volume=volume.squeeze(1))
+        if self.is_ensemble:
+            return preds['probs']
+        return preds['logits']
 
     def forward(self, **batch):
         if self.training:
             return self.model(**batch)
         else:
             with torch.no_grad():
-                logits = sliding_window_inference(
+                preds = sliding_window_inference(
                     inputs=batch['volume'].unsqueeze(1),
                     roi_size=self.roi_size,
                     sw_batch_size=self.sw_batch_size,
@@ -35,7 +40,10 @@ class SlidingWindowWrapper(nn.Module):
                     overlap=self.overlap,
                     mode=self.mode
                 )
-                return {'logits': logits, 'outputs': None}
+                if self.is_ensemble:
+                    return {'probs': preds, 'outputs': None}
+                else:
+                    return {'logits': preds, 'outputs': None}
 
     def state_dict(self, *args, **kwargs):
         return self.model.state_dict(*args, **kwargs)
