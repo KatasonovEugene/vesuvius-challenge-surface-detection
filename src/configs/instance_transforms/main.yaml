@@ -1,7 +1,9 @@
 train:
   crop:
-    _target_: src.transforms.RandSpatialCrop3D
+    _target_: src.transforms.HighSumCrop3D
     size: [160, 160, 160]
+    num_candidates: 10
+    prefer_skeleton: True
   skeletonize:
     _target_: src.transforms.Skeletonize # skeletonize must be after crop
   to_torch:
