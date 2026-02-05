@@ -12,8 +12,6 @@ from src.utils.io_utils import ROOT_PATH
 import zipfile
 import os
 import pandas as pd
-import tifffile
-import numpy as np
 from pathlib import Path
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -45,10 +43,11 @@ def main(config):
     metrics = instantiate(config.metrics)
 
     is_kaggle_env = 'KAGGLE_URL_BASE' in os.environ
+    run_name = Path(config.inferencer.from_pretrained).stem
     if is_kaggle_env:
         save_path = Path('/kaggle/working/')
     else:
-        save_path = ROOT_PATH / "data" / "saved" / config.inferencer.save_path
+        save_path = ROOT_PATH / "data" / "predicted" / run_name
     save_path.mkdir(exist_ok=True, parents=True)
 
     inferencer = Inferencer(
@@ -68,20 +67,15 @@ def main(config):
     if is_kaggle_env:
         root_dir = Path('/kaggle/input/vesuvius-challenge-surface-detection')
         zip_path = "/kaggle/working/submission.zip"
-    else:
-        root_dir = ROOT_PATH / "data"
-        zip_path = ROOT_PATH / "submissions"
-        zip_path.mkdir(parents=True, exist_ok=True)
-        zip_path = zip_path / "submission.zip"
 
-    test_df = pd.read_csv(f"{root_dir}/test.csv")
+        test_df = pd.read_csv(f"{root_dir}/test.csv")
 
-    with zipfile.ZipFile(
-        zip_path, "w", compression=zipfile.ZIP_DEFLATED
-    ) as z:
-        for image_id in test_df["id"]:
-            out_path = save_path / 'test' / f"{image_id}.tif"
-            z.write(out_path, arcname=f"{image_id}.tif")
+        with zipfile.ZipFile(
+            zip_path, "w", compression=zipfile.ZIP_DEFLATED
+        ) as z:
+            for image_id in test_df["id"]:
+                out_path = save_path / 'test' / f"{image_id}.tif"
+                z.write(out_path, arcname=f"{image_id}.tif")
 
     for part in logs.keys():
         for key, value in logs[part].items():
