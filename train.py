@@ -8,6 +8,7 @@ from omegaconf import OmegaConf
 from src.datasets.data_utils import get_dataloaders
 from src.trainer import Trainer
 from src.utils.init_utils import set_random_seed, setup_saving_and_logging
+from src.model import SlidingWindowWrapper
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -35,6 +36,8 @@ def main(config):
 
     dataloaders, batch_transforms = get_dataloaders(config, device)
     model = instantiate(config.model).to(device)
+    assert isinstance(model, SlidingWindowWrapper)
+
     loss_function = instantiate(config.loss).to(device)
     metrics = instantiate(config.metrics)
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())

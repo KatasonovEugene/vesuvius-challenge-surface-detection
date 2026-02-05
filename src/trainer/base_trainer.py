@@ -8,6 +8,7 @@ from tqdm.auto import tqdm
 from src.datasets.data_utils import inf_loop
 from src.metrics.tracker import MetricTracker
 from src.utils.io_utils import ROOT_PATH
+from src.model import Ensemble
 
 
 class BaseTrainer:
@@ -67,6 +68,8 @@ class BaseTrainer:
         self.log_step = config.trainer.get("log_step", 50)
 
         self.model = model
+        self.is_ensemble = isinstance(self.model.model, Ensemble)
+
         self.criterion = criterion
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
@@ -527,25 +530,22 @@ class BaseTrainer:
             f"Checkpoint loaded. Resume training from epoch {self.start_epoch}"
         )
 
-    def _from_pretrained(self, pretrained_path):
-        """
-        Init model with weights from pretrained pth file.
-
-        Notice that 'pretrained_path' can be any path on the disk. It is not
-        necessary to locate it in the experiment saved dir. The function
-        initializes only the model.
-
-        Args:
-            pretrained_path (str): path to the model state dict.
-        """
+    def _load_one_pretrained(self, pretrained_path, model):
         pretrained_path = str(pretrained_path)
-        if hasattr(self, "logger"):  # to support both trainer and inferencer
+        if hasattr(self, "logger"):
             self.logger.info(f"Loading model weights from: {pretrained_path} ...")
         else:
             print(f"Loading model weights from: {pretrained_path} ...")
-        checkpoint = torch.load(pretrained_path, self.device, weights_only=False)
+        checkpoint = torch.load(pretrained_path, self.device)
 
         if checkpoint.get("state_dict") is not None:
-            self.model.load_state_dict(checkpoint["state_dict"])
+            model.load_state_dict(checkpoint["state_dict"])
         else:
-            self.model.load_state_dict(checkpoint)
+            model.load_state_dict(checkpoint)
+
+    def _from_pretrained(self, pretrained_paths):
+        if self.is_ensemble:
+            for idx, pretrained_path in enumerate(pretrained_paths):
+                self._load_one_pretrained(pretrained_path, self.model.get_ensemble_model(idx))
+        else:
+            self._load_one_pretrained(pretrained_paths, self.model)

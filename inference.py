@@ -8,6 +8,7 @@ from src.datasets.data_utils import get_dataloaders
 from src.trainer import Inferencer
 from src.utils.init_utils import set_random_seed
 from src.utils.io_utils import ROOT_PATH
+from src.model import Ensemble, SlidingWindowWrapper
 
 import zipfile
 import os
@@ -39,10 +40,18 @@ def main(config):
     postprocess_transforms = instantiate(config.postprocess_transforms)
 
     model = instantiate(config.model).to(device)
+    assert isinstance(model, SlidingWindowWrapper)
+    assert not (isinstance(model.model, Ensemble) and tta_transforms)
+
     metrics = instantiate(config.metrics)
 
     is_kaggle_env = 'KAGGLE_URL_BASE' in os.environ
-    run_name = Path(config.inferencer.from_pretrained).stem
+    from_pretrained_paths = config.inferencer.from_pretrained
+    if len(from_pretrained_paths) == 1:
+        run_name = Path(from_pretrained_paths).stem
+    else:
+        run_name = '_'.join([Path(path).stem for path in from_pretrained_paths])
+
     if is_kaggle_env:
         save_path = Path('/kaggle/working/')
     else:

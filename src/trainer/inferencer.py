@@ -1,14 +1,13 @@
 import torch
+import torch.nn.functional as F
+
 from tqdm.auto import tqdm
-import numpy as np
 import tifffile as tiff
-import scipy.ndimage as ndi
 import copy
 
 from src.metrics.tracker import MetricTracker
 from src.trainer.base_trainer import BaseTrainer
-
-from monai.inferers.utils import sliding_window_inference
+from src.model import Ensemble
 
 class Inferencer(BaseTrainer):
     """
@@ -64,18 +63,14 @@ class Inferencer(BaseTrainer):
         self.device = device
 
         self.model = model
+        self.is_ensemble = isinstance(model.model, Ensemble)
+
         self.batch_transforms = batch_transforms
         self.tta_transforms = tta_transforms
         self.postprocess_transforms = postprocess_transforms
 
-        # define dataloaders
         self.evaluation_dataloaders = {k: v for k, v in dataloaders.items()}
-
-        # path definition
-
         self.save_path = save_path
-
-        # define metrics
         self.metrics = metrics
         if self.metrics is not None:
             self.evaluation_metrics = MetricTracker(
@@ -86,7 +81,6 @@ class Inferencer(BaseTrainer):
             self.evaluation_metrics = None
 
         if not skip_model_load:
-            # init model
             self._from_pretrained(config.inferencer.get("from_pretrained"))
 
     def run_inference(self):
@@ -150,7 +144,11 @@ class Inferencer(BaseTrainer):
                 samples_num += 1
             batch['logits'] /= samples_num
 
-        batch['outputs'] = torch.nn.functional.softmax(batch['logits'], dim=1)[:, 1]
+        if self.is_ensemble:
+            batch['outputs'] = batch['probs']
+        else:
+            batch['outputs'] = F.softmax(batch['logits'], dim=1)[:, 1]
+
         batch = self.apply_transforms(self.postprocess_transforms, batch)
 
         if metrics is not None and self.metrics is not None:
