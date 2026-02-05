@@ -14,7 +14,7 @@ defaults:
 trainer:
   log_step: 10
   n_epochs: 50
-  epoch_len: 1000
+  epoch_len: 1500
   device_tensors: ["volume", "gt_mask", "gt_skel"]
   resume_from: null
   from_pretrained: null
