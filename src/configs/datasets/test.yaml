@@ -1,4 +1,4 @@
 test:
   _target_: src.datasets.VesuviusDataset
   part: 'test'
-  instance_transforms: ${transforms.instance_transforms.inference}
+  instance_transforms: ${instance_transforms.inference}

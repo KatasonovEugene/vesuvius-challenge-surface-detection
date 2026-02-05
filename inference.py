@@ -36,10 +36,9 @@ def main(config):
 
     dataloaders, batch_transforms = get_dataloaders(config, device)
     tta_transforms = instantiate(config.tta_transforms)
+    postprocess_transforms = instantiate(config.postprocess_transforms)
 
     model = instantiate(config.model).to(device)
-    print(model)
-
     metrics = instantiate(config.metrics)
 
     is_kaggle_env = 'KAGGLE_URL_BASE' in os.environ
@@ -57,6 +56,7 @@ def main(config):
         dataloaders=dataloaders,
         batch_transforms=batch_transforms,
         tta_transforms=tta_transforms,
+        postprocess_transforms=postprocess_transforms,
         save_path=save_path,
         metrics=metrics,
         skip_model_load=False,

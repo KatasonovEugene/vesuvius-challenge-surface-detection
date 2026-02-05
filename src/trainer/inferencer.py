@@ -29,6 +29,7 @@ class Inferencer(BaseTrainer):
         metrics=None,
         batch_transforms=None,
         tta_transforms=None,
+        postprocess_transforms=None,
         skip_model_load=False,
     ):
         """
@@ -65,6 +66,7 @@ class Inferencer(BaseTrainer):
         self.model = model
         self.batch_transforms = batch_transforms
         self.tta_transforms = tta_transforms
+        self.postprocess_transforms = postprocess_transforms
 
         # define dataloaders
         self.evaluation_dataloaders = {k: v for k, v in dataloaders.items()}
@@ -149,7 +151,7 @@ class Inferencer(BaseTrainer):
             batch['logits'] /= samples_num
 
         batch['outputs'] = torch.nn.functional.softmax(batch['logits'], dim=1)[:, 1]
-        batch = self.post_process_batch(batch)
+        batch = self.apply_transforms(self.postprocess_transforms, batch)
 
         if metrics is not None and self.metrics is not None:
             for met in self.metrics["inference"]:
@@ -175,8 +177,7 @@ class Inferencer(BaseTrainer):
 
         return batch
 
-
-    def apply_batch_transforms(self, transforms, batch):
+    def apply_transforms(self, transforms, batch):
         if transforms is not None:
             for transform_name in transforms.keys():
                 if '@' in transform_name: # transform applied for several tensors
@@ -189,22 +190,6 @@ class Inferencer(BaseTrainer):
                     transform_result = transforms[transform_name](**batch)
                     batch.update(transform_result)
         return batch
-
-
-    def post_process_batch(self, batch):
-        '''
-        Applying post processing to one sample containing probabilites.
-
-        Expected shape: [D, H, W, 1]
-
-        Args:
-            outputs (Tensor): tensor containing probabilities [0, 1] of class 1
-        '''
-
-        transform_type = "postprocess"
-        transforms = self.batch_transforms.get(transform_type) if self.batch_transforms else None
-        return self.apply_batch_transforms(transforms, batch)
-
 
     def transform_batch(self, batch):
         """
@@ -224,7 +209,7 @@ class Inferencer(BaseTrainer):
 
         transform_type = "train" if self.is_train else "inference"
         transforms = self.batch_transforms.get(transform_type) if self.batch_transforms else None
-        return self.apply_batch_transforms(transforms, batch)
+        return self.apply_transforms(transforms, batch)
 
     def _inference_part(self, part, dataloader):
         """

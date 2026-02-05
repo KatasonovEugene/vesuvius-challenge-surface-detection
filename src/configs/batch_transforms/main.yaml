@@ -46,12 +46,3 @@ train:
     mask_fill_mode: "unlabeled"
 
 inference: null
-
-postprocess:
-  outputs:
-    _target_: src.transforms.PostProcess
-    T_low: 0.50
-    T_high: 0.90
-    z_radius: 1
-    xy_radius: 0
-    dust_min_size: 100

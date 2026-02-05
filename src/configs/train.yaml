@@ -4,7 +4,8 @@ defaults:
   - metrics: main
   - datasets: default
   - dataloader: default
-  - transforms: main
+  - batch_transforms: main
+  - instance_transforms: main
   - loss: skeleton_dice_loss
   - optimizer: adamw
   - lr_scheduler: warmup_cosine

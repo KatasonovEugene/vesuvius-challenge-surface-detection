@@ -1,13 +1,15 @@
 defaults:
-  - model: segresnet
+  - model: nnunet
   - metrics: leaderboard
   - datasets: only_val
   - dataloader: default
-  - transforms: main
+  - batch_transforms: main
+  - instance_transforms: main
+  - postprocess_transforms: empty
   - tta_transforms: empty
   - _self_
 inferencer:
   device_tensors: ["volume"]
   device: auto
   seed: 1
-  from_pretrained: "models/elastic.pth"
+  from_pretrained: "models/nnunet-elastic.pth"

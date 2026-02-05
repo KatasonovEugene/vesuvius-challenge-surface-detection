@@ -3,4 +3,4 @@ val:
   part: 'val'
   val_size: 0.1
   override: True
-  instance_transforms: ${transforms.instance_transforms.inference}
+  instance_transforms: ${instance_transforms.inference}
