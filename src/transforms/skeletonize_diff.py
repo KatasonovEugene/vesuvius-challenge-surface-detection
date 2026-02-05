@@ -22,7 +22,8 @@ class SkeletonizeDiff(nn.Module):
         pred_prob: [B, D, H, W]
         '''
 
-        pred_prob = pred_prob.unsqueeze(1)
+        pred_prob = pred_prob.clamp(0, 1)
+        pred_prob = (pred_prob**2.5).unsqueeze(1)
 
         pred_prob1 = self.soft_open(pred_prob)
         skel = F.relu(pred_prob - pred_prob1)

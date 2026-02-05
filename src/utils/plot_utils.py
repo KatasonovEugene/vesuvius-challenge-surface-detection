@@ -1,5 +1,5 @@
 import matplotlib
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 
 # import napari
 import matplotlib.pyplot as plt
@@ -31,11 +31,11 @@ def view_batch_3d(volume, gt_mask, gt_skel, outputs=None, **batch):
 
 
 def plot_sample(volume, gt_mask, gt_skel, outputs=None, sample_idx=0, max_slices=16, name="sample_plot", **batch):
-    volume = volume.cpu().numpy()
-    gt_mask = gt_mask.cpu().numpy()
-    gt_skel = gt_skel.cpu().numpy()
+    volume = volume.detach().cpu().numpy()
+    gt_mask = gt_mask.detach().cpu().numpy()
+    gt_skel = gt_skel.detach().cpu().numpy()
     if outputs is not None:
-        outputs = outputs.cpu().numpy()
+        outputs = outputs.detach().cpu().numpy()
 
     img = np.squeeze(volume[sample_idx])  # (D, H, W)
     mask = np.squeeze(gt_mask[sample_idx])  # (D, H, W)
@@ -84,13 +84,14 @@ def plot_sample(volume, gt_mask, gt_skel, outputs=None, sample_idx=0, max_slices
         plot_save_path = ROOT_PATH / 'plots' / 'last_run'
     plot_save_path.mkdir(parents=True, exist_ok=True)
 
-    plt.savefig(plot_save_path / f'{name}_{sample_idx}.png')
+    # plt.savefig(plot_save_path / f'{name}_{sample_idx}.png')
+    plt.show()
 
 def plot_results(gt_mask, gt_skel, outputs_probs, outputs_post_processed, sample_idx=0, max_slices=16, prefix="", name="result_plot", **batch):
-    gt_mask = gt_mask.cpu().numpy()
-    gt_skel = gt_skel.cpu().numpy()
-    outputs_probs = outputs_probs.cpu().numpy()
-    outputs_post_processed = outputs_post_processed.cpu().numpy()
+    gt_mask = gt_mask.detach().cpu().numpy()
+    gt_skel = gt_skel.detach().cpu().numpy()
+    outputs_probs = outputs_probs.detach().cpu().numpy()
+    outputs_post_processed = outputs_post_processed.detach().cpu().numpy()
 
     gt_mask = np.squeeze(gt_mask[sample_idx])  # (D, H, W)
     gt_skel = np.squeeze(gt_skel[sample_idx])  # (D, H, W)
@@ -133,7 +134,8 @@ def plot_results(gt_mask, gt_skel, outputs_probs, outputs_post_processed, sample
         plot_save_path = ROOT_PATH / 'plots' / 'last_run'
     plot_save_path.mkdir(parents=True, exist_ok=True)
 
-    plt.savefig(plot_save_path / f'{prefix}_{name}_{sample_idx}.png')
+    # plt.savefig(plot_save_path / f'{prefix}_{name}_{sample_idx}.png')
+    plt.show()
 
 
 def plot_batch(volume, gt_mask, gt_skel, outputs=None, max_slices=16, name="sample_plot", **batch):
