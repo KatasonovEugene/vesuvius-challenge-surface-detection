@@ -6,7 +6,7 @@ from src.transforms.shift_intensity import RandShiftIntensity3D, RandZIntensityD
 from src.transforms.crop import RandSpatialCrop3D
 from src.transforms.post_process import PostProcess
 from src.transforms.cutout import Cutout3D
-from src.transforms.skeletonize import Skeletonize
+from src.transforms.skeletonize import Skeletonize, MedialSurface
 from src.transforms.to_torch import ToTorch
 from src.transforms.elastic_deformation import ElasticDeformation
 from src.transforms.contrast import RandomContrast3D
