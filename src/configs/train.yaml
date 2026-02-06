@@ -1,9 +1,9 @@
 defaults:
-  - model: segresnet
+  - model: nnunet
   - writer: wandb
   - metrics: main
   - datasets: default
-  - dataloader: local
+  - dataloader: default
   - batch_transforms: main
   - instance_transforms: main
   - loss: cldice_n_dice_loss
@@ -17,7 +17,7 @@ trainer:
   epoch_len: 1000
   device_tensors: ["volume", "gt_mask", "gt_skel"]
   resume_from: null
-  from_pretrained: 'saved/cutout3d/cutout-normalize-wd1e-5-channels=2.pth'
+  from_pretrained: null
   device: auto
   override: False
   monitor: "min val_loss"
