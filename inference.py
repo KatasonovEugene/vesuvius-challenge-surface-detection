@@ -47,7 +47,7 @@ def main(config):
 
     is_kaggle_env = 'KAGGLE_URL_BASE' in os.environ
     from_pretrained_paths = config.inferencer.from_pretrained
-    if len(from_pretrained_paths) == 1:
+    if isinstance(from_pretrained_paths, str) == 1:
         run_name = Path(from_pretrained_paths).stem
     else:
         run_name = '_'.join([Path(path).stem for path in from_pretrained_paths])
