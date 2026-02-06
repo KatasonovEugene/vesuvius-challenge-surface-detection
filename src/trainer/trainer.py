@@ -40,21 +40,11 @@ class Trainer(BaseTrainer):
             metric_funcs = self.metrics["train"]
             self.optimizer.zero_grad()
 
-        if not self.is_train:
-            with torch.no_grad():
-                with self._autocast_context():
-                    outputs = self.model(**batch)
-                    batch.update(outputs)
-
-                    all_losses = self.criterion(**batch)
-                    batch.update(all_losses)
-        else:
-            with self._autocast_context():
-                outputs = self.model(**batch)
-                batch.update(outputs)
-
-                all_losses = self.criterion(**batch)
-                batch.update(all_losses)
+        with self._autocast_context():
+            outputs = self.model(**batch)
+            batch.update(outputs)
+            all_losses = self.criterion(**batch)
+        batch.update(all_losses)
 
         if self.is_train:
             if self.scaler is not None:

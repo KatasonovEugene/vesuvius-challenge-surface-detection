@@ -127,25 +127,26 @@ class Inferencer(BaseTrainer):
 
         with self._autocast_context():
             outputs = self.model(**batch)
-            batch.update(outputs)
+        batch.update(outputs)
 
-            if self.tta_transforms:
-                samples_num = 1
-                for transform_name in self.tta_transforms.keys():
-                    batch_copy = copy.deepcopy(batch)
+        if self.tta_transforms:
+            samples_num = 1
+            for transform_name in self.tta_transforms.keys():
+                batch_copy = copy.deepcopy(batch)
 
-                    transform_result = self.tta_transforms[transform_name](**batch_copy)
-                    batch_copy.update(transform_result)
+                transform_result = self.tta_transforms[transform_name](**batch_copy)
+                batch_copy.update(transform_result)
 
+                with self._autocast_context():
                     transformed_outputs = self.model(**batch_copy)
-                    batch_copy.update(transformed_outputs)
+                batch_copy.update(transformed_outputs)
 
-                    real_logits = self.tta_transforms[transform_name].detransform(**batch_copy)
-                    batch_copy.update(real_logits)
+                real_logits = self.tta_transforms[transform_name].detransform(**batch_copy)
+                batch_copy.update(real_logits)
 
-                    batch['logits'] += batch_copy['logits']
-                    samples_num += 1
-                batch['logits'] /= samples_num
+                batch['logits'] += batch_copy['logits']
+                samples_num += 1
+            batch['logits'] /= samples_num
 
         if self.is_ensemble:
             batch['outputs'] = batch['probs'][:, 1]
