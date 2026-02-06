@@ -1,0 +1,6 @@
+_target_: src.loss.SkeletonDiceCEFPLoss
+num_classes: 2
+dice_weight: 1.0
+ce_weight: 1.0
+skel_weight: 0.5
+fp_weight: 0.3

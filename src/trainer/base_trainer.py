@@ -68,7 +68,7 @@ class BaseTrainer:
         self.log_step = config.trainer.get("log_step", 50)
 
         self.model = model
-        self.is_ensemble = isinstance(self.model.model, Ensemble)
+        self.is_ensemble = isinstance(self.model.get_inner_model(), Ensemble)
 
         self.criterion = criterion
         self.optimizer = optimizer

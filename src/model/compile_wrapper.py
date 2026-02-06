@@ -8,6 +8,9 @@ class CompileWrapper(nn.Module):
         self._orig_mod = model
         self.compiled_model = torch.compile(model, **compile_kwargs)
 
+    def get_inner_model(self):
+        return self._orig_mod
+
     def forward(self, **batch):
         return self.compiled_model(**batch)
 

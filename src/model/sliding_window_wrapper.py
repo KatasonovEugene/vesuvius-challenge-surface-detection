@@ -21,6 +21,9 @@ class SlidingWindowWrapper(nn.Module):
         self.mode = mode
         self.is_ensemble = isinstance(self.model, Ensemble)
 
+    def get_inner_model(self):
+        return self.model
+
     def _predictor(self, volume):
         preds = self.model(volume=volume.squeeze(1))
         if self.is_ensemble:

@@ -63,7 +63,7 @@ class Inferencer(BaseTrainer):
         self.device = device
 
         self.model = model
-        self.is_ensemble = isinstance(model.model, Ensemble)
+        self.is_ensemble = isinstance(self.model.get_inner_model(), Ensemble)
 
         self.batch_transforms = batch_transforms
         self.tta_transforms = tta_transforms

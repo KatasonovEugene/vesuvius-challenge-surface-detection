@@ -6,7 +6,7 @@ defaults:
   - dataloader: default
   - batch_transforms: main
   - instance_transforms: main
-  - loss: skeleton_dice_ce_loss
+  - loss: skeleton_dice_ce_fp_loss
   - optimizer: adamw
   - lr_scheduler: warmup_cosine
   - _self_
@@ -25,5 +25,5 @@ trainer:
   early_stop: ${trainer.n_epochs}
   save_dir: "saved"
   seed: 1
-  log_batch_plots: True
-  view_3d_online: false
+  log_batch_plots: False
+  view_3d_online: False

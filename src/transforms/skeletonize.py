@@ -1,34 +1,22 @@
 from torch import nn
 import numpy as np
-from skimage.morphology import skeletonize, closing, disk, dilation
+from skimage.morphology import skeletonize, dilation
+from scipy.ndimage import binary_dilation
 
 
 class Skeletonize(nn.Module):
-    def __init__(self, connect_gap=0):
+    def __init__(self):
         super().__init__()
-
-        self.selem = disk(connect_gap)
 
     def forward(self, gt_skel=None, **batch):
         if gt_skel is None:
             return {}
         gt_skel = gt_skel.squeeze(axis=0)
         mask = (gt_skel == 1)
-
-        skel = np.zeros_like(mask, dtype=bool)
-
-        for i in range(mask.shape[0]):
-            slice_2d = mask[i]
-
-            if slice_2d.any():
-                closed = closing(slice_2d, footprint=self.selem)
-                skel_2d = skeletonize(closed)
-                skel[i] = skel_2d
-            else:
-                skel[i] = slice_2d
-
-        skel = skel[None]
-        return {"gt_skel": skel}
+        skel = skeletonize(mask)
+        tubed_skel = binary_dilation(skel, iterations=1)
+        tubed_skel = tubed_skel[None]
+        return {"gt_skel": tubed_skel}
 
 
 class MedialSurface(nn.Module):
