@@ -6,7 +6,7 @@ defaults:
   - dataloader: default
   - batch_transforms: main
   - instance_transforms: main
-  - loss: ce_dice_fp_skel_loss
+  - loss: nnunet_ce_dice_fp_skel_loss
   - optimizer: adamw
   - lr_scheduler: warmup_cosine
   - _self_
