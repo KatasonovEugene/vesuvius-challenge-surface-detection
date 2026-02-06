@@ -13,7 +13,7 @@ from src.model import SlidingWindowWrapper
 warnings.filterwarnings("ignore", category=UserWarning)
 
 
-@hydra.main(version_base=None, config_path="src/configs", config_name="train")
+@hydra.main(version_base=None, config_path="src/configs", config_name="nnunet-skeleton_dice_twersky")
 def main(config):
     """
     Main script for training. Instantiates the model, optimizer, scheduler,

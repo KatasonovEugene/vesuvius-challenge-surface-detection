@@ -3,7 +3,8 @@ train:
     _target_: src.transforms.RandSpatialCrop3D
     size: [160, 160, 160]
   skeletonize:
-    _target_: src.transforms.Skeletonize # skeletonize must be after crop
+    _target_: src.transforms.MedialSurface # skeletonize must be after crop
+    pseudo3d: True
   to_torch:
     _target_: src.transforms.ToTorch # to_torch must be after skeletonize
   scale_intensity:
@@ -28,7 +29,8 @@ train:
 
 inference:
   skeletonize:
-    _target_: src.transforms.Skeletonize # skeletonize must be after crop
+    _target_: src.transforms.MedialSurface # skeletonize must be after crop
+    pseudo3d: True
   to_torch:
     _target_: src.transforms.ToTorch # to_torch must be after skeletonize
   scale_intensity:
