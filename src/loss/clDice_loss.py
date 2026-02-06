@@ -22,23 +22,30 @@ class ClDiceLoss(nn.Module):
             return -F.max_pool3d(-volume.unsqueeze(1), kernel_size=2, stride=2).squeeze(1)
         raise Exception("Unsupported downsampling mode")
 
-    def forward(self, logits: torch.Tensor, gt_mask: torch.Tensor, gt_skel: torch.Tensor, **batch):
-        probs = torch.softmax(logits, dim=1)
+    def forward(self, logits, gt_mask, gt_skel, probs=None, **batch):
+        '''
+        gt_mask: [B, D, H, W]
+        logits: [B, C, D, H, W]
+        probs: [B, C, D, H, W]
+        '''
+
+        if probs is None:
+            probs = torch.softmax(logits, dim=1)
+        assert(probs.ndim == 5)
 
         dims = (1, 2, 3) 
-        pred_prob = probs[:, 1]
-
+        probs = probs[:, 1]
         valid_mask = (gt_mask != 2).float()
 
         if self.use_downsampling:
-            pred_prob = self.downsample(pred_prob, 'avg')
+            probs = self.downsample(probs, 'avg')
             gt_skel = self.downsample(gt_skel.float(), 'max').bool()
             valid_mask = self.downsample(valid_mask.float(), 'min').float()
             gt_mask = self.downsample((gt_mask == 1).float(), 'max').to(torch.int8)
 
-        pred_skel = self.skeletonize(pred_prob)['pred_skel']
+        pred_skel = self.skeletonize(probs)['pred_skel']
 
-        sens_intersect = (gt_skel * pred_prob * valid_mask).sum(dim=dims)
+        sens_intersect = (gt_skel * probs * valid_mask).sum(dim=dims)
         gt_skel_sum = (gt_skel * valid_mask).sum(dim=dims)
         Tsens = (sens_intersect + self.eps) / (gt_skel_sum + self.eps)
 

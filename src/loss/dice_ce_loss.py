@@ -17,6 +17,8 @@ class DiceCELoss(nn.Module):
     ):
         super().__init__()
 
+        self.num_classes = num_classes
+
         self.dice_weight = dice_weight
         self.ce_weight = ce_weight
         self.reduction = reduction
@@ -34,10 +36,18 @@ class DiceCELoss(nn.Module):
         )
 
     def forward(self, logits, gt_mask, probs=None, **batch):
-        gt_mask = gt_mask.long()
-        if probs is None:
-             probs = torch.softmax(logits, dim=1)[:, 1]
+        '''
+        gt_mask: [B, D, H, W]
+        logits: [B, C, D, H, W]
+        probs: [B, C, D, H, W]
+        '''
 
+        if probs is None:
+            probs = torch.softmax(logits, dim=1)
+        assert(probs.shape[1] == self.num_classes)
+        assert(probs.ndim == 5)
+
+        gt_mask = gt_mask.long()
         dice_loss = self.dice_loss(gt_mask=gt_mask, logits=logits, probs=probs)['loss']
         ce_loss = F.cross_entropy(
             logits,

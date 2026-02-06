@@ -7,13 +7,21 @@ class FPLoss(nn.Module):
         super().__init__()
         self.eps = eps
 
-    def forward(self, logits: torch.Tensor, gt_mask: torch.Tensor, **batch):
-        probs = torch.softmax(logits, dim=1)
+    def forward(self, logits, gt_mask, probs=None, **batch):
+        '''
+        gt_mask: [B, D, H, W]
+        logits: [B, C, D, H, W]
+        probs: [B, C, D, H, W]
+        '''
 
-        pred_prob = probs[:, 1]
+        if probs is None:
+            probs = torch.softmax(logits, dim=1)
+        assert(probs.ndim == 5)
+
+        probs = probs[:, 1]
         valid_mask = (gt_mask != 2).float()
         gt_bg = (gt_mask == 0).float()
-        fp_volume = pred_prob * gt_bg * valid_mask
+        fp_volume = probs * gt_bg * valid_mask
         fp_loss = fp_volume.sum() / ((gt_bg * valid_mask).sum() + self.eps)
 
         return {

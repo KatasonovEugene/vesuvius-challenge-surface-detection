@@ -29,7 +29,7 @@ class nnUnetLoss(nn.Module):
         mask = mask.index_select(4, idx_w)
         return mask
 
-    def forward(self, logits: torch.Tensor, outputs: torch.Tensor, gt_mask: torch.Tensor, gt_skel: torch.Tensor, **batch):
+    def forward(self, logits, outputs, gt_mask, gt_skel, **batch):
         if outputs is None:
             return self.base_loss(logits=logits, gt_mask=gt_mask, gt_skel=gt_skel)
 

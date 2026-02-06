@@ -7,14 +7,22 @@ class SkeletonLoss(nn.Module):
         super().__init__()
         self.eps = eps
 
-    def forward(self, logits: torch.Tensor, gt_mask: torch.Tensor, gt_skel: torch.Tensor, **batch):
-        probs = torch.softmax(logits, dim=1)
+    def forward(self, logits, gt_mask, gt_skel, probs=None, **batch):
+        '''
+        gt_mask: [B, D, H, W]
+        logits: [B, C, D, H, W]
+        probs: [B, C, D, H, W]
+        '''
+
+        if probs is None:
+            probs = torch.softmax(logits, dim=1)
+        assert(probs.ndim == 5)
 
         dims = (1, 2, 3) 
-        pred_prob = probs[:, 1]
+        probs = probs[:, 1]
         valid_mask = (gt_mask != 2).float()
 
-        intersection = (pred_prob * gt_skel * valid_mask).sum(dim=dims)
+        intersection = (probs * gt_skel * valid_mask).sum(dim=dims)
         skel_sum = (gt_skel * valid_mask).sum(dim=dims)
         has_skeleton = (skel_sum > 0).float()
         recall = (intersection + self.eps) / (skel_sum + self.eps)

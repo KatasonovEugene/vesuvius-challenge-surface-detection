@@ -14,6 +14,9 @@ class DiceLoss(nn.Module):
         super().__init__()
         self.num_classes = num_classes
         self.target_class_ids = target_class_ids
+        if target_class_ids is not None and not isinstance(self.target_class_ids, list):
+            self.target_class_ids = [self.target_class_ids]
+
         self.ignore_class_ids = ignore_class_ids or []
         if not isinstance(self.ignore_class_ids, list):
             self.ignore_class_ids = [self.ignore_class_ids]
@@ -26,13 +29,13 @@ class DiceLoss(nn.Module):
         '''
         gt_mask: [B, D, H, W]
         logits: [B, C, D, H, W]
-        probs: [B, D, H, W]
+        probs: [B, C, D, H, W]
         '''
 
         if probs is None:
             probs = torch.softmax(logits, dim=1)
-        elif probs.ndim == 4:
-            probs = probs.unsqueeze(1)
+        assert(probs.shape[1] == self.num_classes)
+        assert(probs.ndim == 5)
 
         gt_mask = gt_mask.long()
         valid_mask = torch.ones_like(gt_mask, dtype=torch.bool)
