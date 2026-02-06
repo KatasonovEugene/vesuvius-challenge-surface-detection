@@ -1,0 +1,10 @@
+_target_: src.loss.nnUnetLoss
+base_loss:
+  _target_: src.loss.SkeletonDiceTwerskyLoss
+  num_classes: 2
+  dice_weight: 1.0
+  skel_weight: 0.5
+  twersky_weight: 0.7
+  twersky_alpha: 0.7
+  twersky_beta: 0.3
+ds_weights: null
