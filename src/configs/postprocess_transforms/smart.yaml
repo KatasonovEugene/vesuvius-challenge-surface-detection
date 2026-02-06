@@ -1,0 +1,9 @@
+outputs:
+  _target_: src.transforms.SmartPostProcess
+  T_low: 0.35
+  T_high: 0.75
+  sigmas: [1.0, 1.5, 2.0, 2.5]
+  beta: 0.5
+  z_radius: 1
+  xy_radius: 0
+  dust_min_size: 100
