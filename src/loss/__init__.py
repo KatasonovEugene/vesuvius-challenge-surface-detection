@@ -7,3 +7,4 @@ from src.loss.skeleton_dice_ce_loss import SkeletonDiceCELoss
 from src.loss.clDice_loss import ClDiceLoss
 from src.loss.clDice_n_dice_loss import ClDiceNDiceLoss
 from src.loss.nnunet_loss import nnUnetLoss
+from src.loss.skeleton_dice_twersky_loss import SkeletonDiceTwerskyLoss
