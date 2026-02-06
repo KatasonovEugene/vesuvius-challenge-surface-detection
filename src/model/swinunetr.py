@@ -7,7 +7,7 @@ class SwinUNETRDetector(nn.Module):
         self,
         in_channels=1,
         out_channels=2,
-        feature_size=48,
+        feature_size=24,
         use_v2=True,
         drop_rate=0.2,
         attn_drop_rate=0.2,
