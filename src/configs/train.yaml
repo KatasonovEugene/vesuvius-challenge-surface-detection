@@ -3,10 +3,10 @@ defaults:
   - writer: wandb
   - metrics: main
   - datasets: default
-  - dataloader: default
+  - dataloader: local
   - batch_transforms: main
   - instance_transforms: main
-  - loss: skeleton_dice_ce_loss
+  - loss: cldice_n_dice_loss
   - optimizer: adamw
   - lr_scheduler: warmup_cosine
   - _self_
@@ -17,7 +17,7 @@ trainer:
   epoch_len: 1000
   device_tensors: ["volume", "gt_mask", "gt_skel"]
   resume_from: null
-  from_pretrained: null
+  from_pretrained: 'saved/cutout3d/cutout-normalize-wd1e-5-channels=2.pth'
   device: auto
   override: False
   monitor: "min val_loss"
@@ -25,5 +25,5 @@ trainer:
   early_stop: ${trainer.n_epochs}
   save_dir: "saved"
   seed: 1
-  log_batch_plots: True
+  log_batch_plots: false
   view_3d_online: false

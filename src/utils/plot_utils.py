@@ -1,5 +1,5 @@
 import matplotlib
-# matplotlib.use('Agg')
+matplotlib.use('Agg')
 
 # import napari
 import matplotlib.pyplot as plt
@@ -84,8 +84,7 @@ def plot_sample(volume, gt_mask, gt_skel, outputs=None, sample_idx=0, max_slices
         plot_save_path = ROOT_PATH / 'plots' / 'last_run'
     plot_save_path.mkdir(parents=True, exist_ok=True)
 
-    # plt.savefig(plot_save_path / f'{name}_{sample_idx}.png')
-    plt.show()
+    plt.savefig(plot_save_path / f'{name}_{sample_idx}.png')
 
 def plot_results(gt_mask, gt_skel, outputs_probs, outputs_post_processed, sample_idx=0, max_slices=16, prefix="", name="result_plot", **batch):
     gt_mask = gt_mask.detach().cpu().numpy()
@@ -134,8 +133,7 @@ def plot_results(gt_mask, gt_skel, outputs_probs, outputs_post_processed, sample
         plot_save_path = ROOT_PATH / 'plots' / 'last_run'
     plot_save_path.mkdir(parents=True, exist_ok=True)
 
-    # plt.savefig(plot_save_path / f'{prefix}_{name}_{sample_idx}.png')
-    plt.show()
+    plt.savefig(plot_save_path / f'{prefix}_{name}_{sample_idx}.png')
 
 
 def plot_batch(volume, gt_mask, gt_skel, outputs=None, max_slices=16, name="sample_plot", **batch):

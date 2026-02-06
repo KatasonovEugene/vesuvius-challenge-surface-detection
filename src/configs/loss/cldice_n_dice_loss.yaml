@@ -2,3 +2,5 @@ _target_: src.loss.ClDiceNDiceLoss
 num_classes: 2
 dice_weight: 1.0
 cl_weight: 0.4
+use_downsampling: True
+iterations: 14
