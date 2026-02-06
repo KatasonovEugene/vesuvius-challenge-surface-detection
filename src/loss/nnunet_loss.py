@@ -1,6 +1,5 @@
 import torch
 from torch import nn
-import torch.nn.functional as F
 
 
 class nnUnetLoss(nn.Module):
@@ -12,10 +11,10 @@ class nnUnetLoss(nn.Module):
         super().__init__()
         self.ds_weights = ds_weights
         self.base_loss = base_loss
+        self.names = self.base_loss.names
 
     @staticmethod
-    def _nearest_resize_int(mask, size):
-        # mask: [B, C, D, H, W] integer/boolean tensor
+    def _nearest_resize_int(mask, size): # mask: [B, C, D, H, W]
         D, H, W = mask.shape[2], mask.shape[3], mask.shape[4]
         D_out, H_out, W_out = size
         device = mask.device
@@ -58,5 +57,7 @@ class nnUnetLoss(nn.Module):
             else:
                 for key in result_i:
                     accum_results[key] += result_i[key] * weight
+
+        assert all(['loss' in name for name in accum_results])
 
         return accum_results

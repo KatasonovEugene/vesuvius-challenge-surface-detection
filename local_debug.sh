@@ -10,4 +10,5 @@ python3 train.py \
     instance_transforms=debug \
     trainer.n_epochs=1 \
     trainer.epoch_len=3 \
+    'model.roi_size=[64, 64, 64]' \
     $@

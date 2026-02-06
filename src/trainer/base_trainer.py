@@ -124,13 +124,13 @@ class BaseTrainer:
         # define metrics
         self.metrics = metrics
         self.train_metrics = MetricTracker(
-            *self.config.writer.loss_names,
+            *self.criterion.names,
             "grad_norm",
             *[key for met in self.metrics["train"] for key in met.keys_full_list()],
             writer=self.writer,
         )
         self.evaluation_metrics = MetricTracker(
-            *self.config.writer.loss_names,
+            *self.criterion.names,
             *[key for met in self.metrics["inference"] for key in met.keys_full_list()],
             writer=self.writer,
         )

@@ -1,0 +1,12 @@
+_target_: src.loss.nnUnetLoss
+base_loss:
+  _target_: src.loss.CECldDiceFPSkelLoss
+  num_classes: 2
+  ce_weight: 1.0
+  cld_weight: 0.4
+  dice_weight: 1.0
+  fp_weight: 0.3
+  eps: 1e-7
+  use_downsampling: False
+  iterations: 5
+ds_weights: null

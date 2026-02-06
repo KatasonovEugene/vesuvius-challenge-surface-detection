@@ -22,17 +22,7 @@ class ClDiceLoss(nn.Module):
             return -F.max_pool3d(-volume.unsqueeze(1), kernel_size=2, stride=2).squeeze(1)
         raise Exception("Unsupported downsampling mode")
 
-    def forward(self, logits, gt_mask, gt_skel, probs=None, **batch):
-        '''
-        gt_mask: [B, D, H, W]
-        logits: [B, C, D, H, W]
-        probs: [B, C, D, H, W]
-        '''
-
-        if probs is None:
-            probs = torch.softmax(logits, dim=1)
-        assert(probs.ndim == 5)
-
+    def forward(self, probs, gt_mask, gt_skel, **batch):
         dims = (1, 2, 3) 
         probs = probs[:, 1]
         valid_mask = (gt_mask != 2).float()
@@ -54,8 +44,6 @@ class ClDiceLoss(nn.Module):
         Tprec = (prec_intersect + self.eps) / (pred_skel_sum + self.eps)
 
         clDice_score = (2 * Tprec * Tsens + self.eps) / (Tprec + Tsens + self.eps)
-        loss = 1.0 - clDice_score.mean()
+        cldice_loss = 1.0 - clDice_score.mean()
 
-        return {
-            "loss": loss,
-        }
+        return cldice_loss

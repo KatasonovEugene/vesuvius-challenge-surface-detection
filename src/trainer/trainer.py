@@ -2,36 +2,16 @@ import torch
 from src.metrics.tracker import MetricTracker
 from src.trainer.base_trainer import BaseTrainer
 from src.utils.plot_utils import plot_batch, view_batch_3d
+import numpy as np
+
 
 class Trainer(BaseTrainer):
-    """
-    Trainer class. Defines the logic of batch logging and processing.
-    """
-
     def __init__(self, *args, log_batch_plots=False, view_3d_online=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.log_batch_plots = log_batch_plots
         self.view_3d_online = view_3d_online
 
     def process_batch(self, batch, metrics: MetricTracker):
-        """
-        Run batch through the model, compute metrics, compute loss,
-        and do training step (during training stage).
-
-        The function expects that criterion aggregates all losses
-        (if there are many) into a single one defined in the 'loss' key.
-
-        Args:
-            batch (dict): dict-based batch containing the data from
-                the dataloader.
-            metrics (MetricTracker): MetricTracker object that computes
-                and aggregates the metrics. The metrics depend on the type of
-                the partition (train or inference).
-        Returns:
-            batch (dict): dict-based batch containing the data from
-                the dataloader (possibly transformed via batch transform),
-                model outputs, and losses.
-        """
         batch = self.move_batch_to_device(batch)
         batch = self.transform_batch(batch)
 
@@ -74,39 +54,42 @@ class Trainer(BaseTrainer):
                 batch['outputs'] = torch.softmax(batch['logits'], dim=1)[:, 1].detach()
             view_batch_3d(**batch)
 
-        with torch.no_grad():
-            for loss_name in self.config.writer.loss_names:
-                metrics.update(loss_name, batch[loss_name].item())
+        for loss_name in self.criterion.names:
+            metrics.update(loss_name, batch[loss_name].item())
 
-            for met in metric_funcs:
-                metric_result = met(**batch)
-                if isinstance(metric_result, dict):
-                    for key in metric_result.keys():
-                        metrics.update(met.name + '_' + key, metric_result[key])
-                else:
-                    metrics.update(met.name, metric_result)
+        for met in metric_funcs:
+            metric_result = met(**batch)
+            if isinstance(metric_result, dict):
+                for key in metric_result.keys():
+                    metrics.update(met.name + '_' + key, metric_result[key])
+            else:
+                metrics.update(met.name, metric_result)
 
         return batch
+    
+    def convert_image(self, img):
+        img = img.detach().long().cpu().numpy()
+        out = np.zeros((*img.shape, 3), dtype=np.uint8)
+
+        out[img == 0] = [0, 0, 0]
+        out[img == 1] = [255, 255, 255]
+        out[img == 2] = [127, 127, 127]
+
+        return out
 
     def _log_batch(self, batch_idx, batch, mode="train"):
-        """
-        Log data from batch. Calls self.writer.add_* to log data
-        to the experiment tracker.
-
-        Args:
-            batch_idx (int): index of the current batch.
-            batch (dict): dict-based batch after going through
-                the 'process_batch' function.
-            mode (str): train or inference. Defines which logging
-                rules to apply.
-        """
-        # method to log data from you batch
-        # such as audio, text or images, for example
-
-        # logging scheme might be different for different partitions
-        if mode == "train":  # the method is called only every self.log_step steps
-            # Log Stuff
-            pass
-        else:
-            # Log Stuff
-            pass
+        if mode != "train":
+            indices = [40, 80, 120]
+            mask = batch['gt_mask'][0]
+            pred = torch.softmax(batch['logits'], dim=1).argmax(dim=1)[0]
+            mask = self.convert_image(mask)
+            pred = self.convert_image(pred)
+            slices = {
+                "mask_axial_z": [mask[i, :, :] for i in indices],
+                "mask_coronal_y": [mask[:, i, :] for i in indices],
+                "mask_sagittal_x": [mask[:, :, i] for i in indices],
+                "pred_axial_z": [pred[i, :, :] for i in indices],
+                "pred_coronal_y": [pred[:, i, :] for i in indices],
+                "pred_sagittal_x": [pred[:, :, i] for i in indices],
+            }
+            self.writer.add_slices(slices)

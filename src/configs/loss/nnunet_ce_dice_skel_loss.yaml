@@ -1,8 +1,9 @@
 _target_: src.loss.nnUnetLoss
 base_loss:
-  _target_: src.loss.SkeletonDiceCELoss
+  _target_: src.loss.CECldDiceFPSkelLoss
   num_classes: 2
+  ce_weight: 1.0
   dice_weight: 1.0
   skel_weight: 0.5
-  ce_weight: 0.1
+  eps: 1e-7
 ds_weights: null

@@ -1,0 +1,7 @@
+_target_: src.loss.CECldDiceFPSkelLoss
+num_classes: 2
+ce_weight: 1.0
+dice_weight: 1.0
+skel_weight: 0.5
+fp_weight: 0.3
+eps: 1e-7

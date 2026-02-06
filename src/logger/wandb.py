@@ -112,6 +112,18 @@ class WandBWriter:
         """
         self.wandb.save(checkpoint_path, base_path=save_dir)
 
+    def add_slices(self, slices):
+        log_imgs = {}
+        for axis, imgs in slices.items():
+            log_imgs[axis] = [
+                self.wandb.Image(img, caption=f"{axis} slice")
+                for img in imgs
+            ]
+        self.wandb.log(
+            log_imgs,
+            step=self.step,
+        )
+
     def add_scalar(self, scalar_name, scalar):
         """
         Log a scalar to the experiment tracker.
