@@ -144,9 +144,16 @@ class Inferencer(BaseTrainer):
                 real_logits = self.tta_transforms[transform_name].detransform(**batch_copy)
                 batch_copy.update(real_logits)
 
-                batch['logits'] += batch_copy['logits']
+                if self.is_ensemble:
+                    batch['probs'] += batch_copy['probs']
+                else:
+                    batch['logits'] += batch_copy['logits']
                 samples_num += 1
-            batch['logits'] /= samples_num
+
+            if self.is_ensemble:
+                batch['probs'] /= samples_num
+            else:
+                batch['logits'] /= samples_num
 
         if self.is_ensemble:
             batch['outputs'] = batch['probs'][:, 1]
@@ -168,7 +175,6 @@ class Inferencer(BaseTrainer):
         for i in range(batch_size):
             post_processed_sample = batch["outputs"][i].clone()
             output_image_id = batch['image_id'][i]
-
             if self.save_path is not None:
                 tiff.imwrite(self.save_path / part / f'{output_image_id}.tif', post_processed_sample.cpu().numpy())
 

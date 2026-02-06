@@ -95,7 +95,7 @@ class Flip3D(BaseTTATransform):
         return result
 
 
-    def detransform(self, *, logits, gt_mask=None, gt_skel=None, **batch):
+    def detransform(self, gt_mask=None, gt_skel=None, **batch):
         """
         Args:
             logits (Tensor): rotated logits tensor.
@@ -107,16 +107,25 @@ class Flip3D(BaseTTATransform):
             gt_skel (None or Tensor): derotated ground truth skeleton tensor.
         """
 
-        if logits.dim() != 5:
-            raise RuntimeError(f'Flip3D: input shape was not expected; input shape: {logits.shape}; expected shape: [B, C, D, H, W]')
+        if 'probs' in batch:
+            preds = batch['probs']
+        else:
+            preds = batch['logits']
 
-        logits = torch.flip(logits, dims=[self.spatial_axis + 2])
+        if preds.dim() != 5:
+            raise RuntimeError(f'Flip3D: input shape was not expected; input shape: {preds.shape}; expected shape: [B, C, D, H, W]')
+
+        preds = torch.flip(preds, dims=[self.spatial_axis + 2])
         if gt_mask is not None:
             gt_mask = torch.flip(gt_mask, dims=[self.spatial_axis + 1])
         if gt_skel is not None:
             gt_skel = torch.flip(gt_skel, dims=[self.spatial_axis + 1])
 
-        result = {'logits': logits}
+        if 'probs' in batch:
+            result = {'probs': preds}
+        else:
+            result = {'logits': preds}
+
         if gt_mask is not None:
             result['gt_mask'] = gt_mask
         if gt_skel is not None:

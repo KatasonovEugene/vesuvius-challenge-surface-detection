@@ -40,11 +40,9 @@ def main(config):
     postprocess_transforms = instantiate(config.postprocess_transforms)
 
     model = instantiate(config.model).to(device)
-    assert isinstance(model, SlidingWindowWrapper)
-    assert not (isinstance(model.model, Ensemble) and tta_transforms)
-
     metrics = instantiate(config.metrics)
 
+    assert hasattr(model, "get_inner_model")
     is_kaggle_env = 'KAGGLE_URL_BASE' in os.environ
     from_pretrained_paths = config.inferencer.from_pretrained
     if isinstance(from_pretrained_paths, str) == 1:

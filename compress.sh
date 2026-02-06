@@ -6,6 +6,7 @@ SRC_DIR="."
 
 tar \
   --exclude="./ext" \
+  --exclude="./.git" \
   --exclude="./data" \
   --exclude="./wandb" \
   --exclude="./outputs" \
