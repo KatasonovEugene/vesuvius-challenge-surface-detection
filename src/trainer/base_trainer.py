@@ -1,4 +1,5 @@
 from abc import abstractmethod
+import contextlib
 
 import torch
 from numpy import inf
@@ -74,6 +75,8 @@ class BaseTrainer:
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
         self.batch_transforms = batch_transforms
+
+        self._init_amp_config(self.cfg_trainer)
 
         # define dataloaders
         self.train_dataloader = dataloaders["train"]
@@ -155,6 +158,28 @@ class BaseTrainer:
             self.logger.info("Saving model on keyboard interrupt")
             self._save_checkpoint(self._last_epoch, save_best=False)
             raise e
+
+    def _init_amp_config(self, config):
+        self.use_amp = config.get("use_amp", False)
+        self.amp_dtype = self._resolve_amp_dtype(config.get("amp_dtype", "float16"))
+
+        if self.use_amp and self.device == "cuda" and self.amp_dtype == torch.float16:
+            self.scaler = torch.GradScaler()
+        else:
+            self.scaler = None
+
+    def _resolve_amp_dtype(self, dtype_name):
+        dtype_name = str(dtype_name).lower()
+        if dtype_name in {"float16", "fp16", "half"}:
+            return torch.float16
+        if dtype_name in {"bfloat16", "bf16"}:
+            return torch.bfloat16
+        raise ValueError(f"Unsupported AMP dtype: {dtype_name}. Supported: float16, bfloat16.")
+
+    def _autocast_context(self):
+        if not getattr(self, "use_amp", False):
+            return contextlib.nullcontext()
+        return torch.autocast(device_type=self.device, dtype=self.amp_dtype)
 
     def _train_process(self):
         """

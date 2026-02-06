@@ -16,6 +16,8 @@ trainer:
   n_epochs: 50
   epoch_len: 1000
   device_tensors: ["volume", "gt_mask", "gt_skel"]
+  use_amp: False
+  amp_dtype: "bfloat16"
   resume_from: null
   from_pretrained: null
   device: auto

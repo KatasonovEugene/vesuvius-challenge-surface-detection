@@ -69,6 +69,8 @@ class Inferencer(BaseTrainer):
         self.tta_transforms = tta_transforms
         self.postprocess_transforms = postprocess_transforms
 
+        self._init_amp_config(self.cfg_trainer)
+
         self.evaluation_dataloaders = {k: v for k, v in dataloaders.items()}
         self.save_path = save_path
         self.metrics = metrics
@@ -123,26 +125,27 @@ class Inferencer(BaseTrainer):
         batch = self.move_batch_to_device(batch)
         batch = self.transform_batch(batch)  # transform batch on device -- faster
 
-        outputs = self.model(**batch)
-        batch.update(outputs)
+        with self._autocast_context():
+            outputs = self.model(**batch)
+            batch.update(outputs)
 
-        if self.tta_transforms:
-            samples_num = 1
-            for transform_name in self.tta_transforms.keys():
-                batch_copy = copy.deepcopy(batch)
+            if self.tta_transforms:
+                samples_num = 1
+                for transform_name in self.tta_transforms.keys():
+                    batch_copy = copy.deepcopy(batch)
 
-                transform_result = self.tta_transforms[transform_name](**batch_copy)
-                batch_copy.update(transform_result)
+                    transform_result = self.tta_transforms[transform_name](**batch_copy)
+                    batch_copy.update(transform_result)
 
-                transformed_outputs = self.model(**batch_copy)
-                batch_copy.update(transformed_outputs)
+                    transformed_outputs = self.model(**batch_copy)
+                    batch_copy.update(transformed_outputs)
 
-                real_logits = self.tta_transforms[transform_name].detransform(**batch_copy)
-                batch_copy.update(real_logits)
+                    real_logits = self.tta_transforms[transform_name].detransform(**batch_copy)
+                    batch_copy.update(real_logits)
 
-                batch['logits'] += batch_copy['logits']
-                samples_num += 1
-            batch['logits'] /= samples_num
+                    batch['logits'] += batch_copy['logits']
+                    samples_num += 1
+                batch['logits'] /= samples_num
 
         if self.is_ensemble:
             batch['outputs'] = batch['probs'][:, 1]

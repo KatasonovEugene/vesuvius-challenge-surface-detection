@@ -42,22 +42,32 @@ class Trainer(BaseTrainer):
 
         if not self.is_train:
             with torch.no_grad():
+                with self._autocast_context():
+                    outputs = self.model(**batch)
+                    batch.update(outputs)
+
+                    all_losses = self.criterion(**batch)
+                    batch.update(all_losses)
+        else:
+            with self._autocast_context():
                 outputs = self.model(**batch)
                 batch.update(outputs)
 
                 all_losses = self.criterion(**batch)
                 batch.update(all_losses)
-        else:
-            outputs = self.model(**batch)
-            batch.update(outputs)
-
-            all_losses = self.criterion(**batch)
-            batch.update(all_losses)
 
         if self.is_train:
-            batch["loss"].backward()
-            self._clip_grad_norm()
-            self.optimizer.step()
+            if self.scaler is not None:
+                self.scaler.scale(batch["loss"]).backward()
+                self.scaler.unscale_(self.optimizer)
+                self._clip_grad_norm()
+                self.scaler.step(self.optimizer)
+                self.scaler.update()
+            else:
+                batch["loss"].backward()
+                self._clip_grad_norm()
+                self.optimizer.step()
+
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
 
