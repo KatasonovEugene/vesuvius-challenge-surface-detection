@@ -62,3 +62,55 @@ class RandSpatialCrop3D(nn.Module):
         if gt_skel is not None: 
             result['gt_skel'] = gt_skel
         return result
+
+
+class HighSumCrop3D(nn.Module):
+    def __init__(self, size, num_candidates=10, prefer_skeleton=True):
+        super().__init__()
+        self.size = tuple(size)
+        self.num_candidates = int(num_candidates)
+        self.prefer_skeleton = bool(prefer_skeleton)
+
+    def forward(self, volume, gt_mask, gt_skel=None, **batch):
+        if volume.ndim != 4:
+            raise RuntimeError(f'HighSumCrop3D: input shape was not expected; input shape: {volume.shape}; expected shape: [B, D, H, W]')
+
+        B, D, H, W = volume.shape
+        sd, sh, sw = self.size
+
+        out_vol = np.empty((B, sd, sh, sw), dtype=volume.dtype)
+        out_msk = np.empty((B, sd, sh, sw), dtype=gt_mask.dtype)
+        out_skel = np.empty((B, sd, sh, sw), dtype=gt_skel.dtype) if gt_skel is not None else None
+
+        for b in range(B):
+            valid = (gt_mask[b] != 2)
+
+            if gt_skel is not None and self.prefer_skeleton:
+                target = (gt_skel[b] > 0) & valid
+            else:
+                target = (gt_mask[b] == 1) & valid
+
+            best = None
+            best_score = -1
+
+            for _ in range(self.num_candidates):
+                bz = np.random.randint(0, D - sd + 1)
+                by = np.random.randint(0, H - sh + 1)
+                bx = np.random.randint(0, W - sw + 1)
+
+                score = int(target[bz:bz+sd, by:by+sh, bx:bx+sw].sum())
+                if score > best_score:
+                    best_score = score
+                    best = (bz, by, bx)
+
+            bz, by, bx = best
+
+            out_vol[b] = volume[b, bz:bz+sd, by:by+sh, bx:bx+sw]
+            out_msk[b] = gt_mask[b, bz:bz+sd, by:by+sh, bx:bx+sw]
+            if out_skel is not None:
+                out_skel[b] = gt_skel[b, bz:bz+sd, by:by+sh, bx:bx+sw]
+
+        result = {"volume": out_vol, "gt_mask": out_msk}
+        if out_skel is not None:
+            result["gt_skel"] = out_skel
+        return result
