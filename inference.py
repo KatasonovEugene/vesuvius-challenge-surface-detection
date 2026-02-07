@@ -79,18 +79,17 @@ def main(config):
 
     logs = inferencer.run_inference()
 
-    if is_kaggle_env:
-        root_dir = Path('/kaggle/input/vesuvius-challenge-surface-detection')
-        zip_path = "/kaggle/working/submission.zip"
+    root_dir = Path('/kaggle/input/vesuvius-challenge-surface-detection')
+    zip_path = "/kaggle/working/submission.zip"
 
-        test_df = pd.read_csv(f"{root_dir}/test.csv")
+    test_df = pd.read_csv(f"{root_dir}/test.csv")
 
-        with zipfile.ZipFile(
-            zip_path, "w", compression=zipfile.ZIP_DEFLATED
-        ) as z:
-            for image_id in test_df["id"]:
-                out_path = save_path / output_part / f"{image_id}.tif"
-                z.write(out_path, arcname=f"{image_id}.tif")
+    with zipfile.ZipFile(
+        zip_path, "w", compression=zipfile.ZIP_DEFLATED
+    ) as z:
+        for image_id in test_df["id"]:
+            out_path = save_path / output_part / f"{image_id}.tif"
+            z.write(out_path, arcname=f"{image_id}.tif")
 
     for part in logs.keys():
         for key, value in logs[part].items():
