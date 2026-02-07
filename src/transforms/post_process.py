@@ -6,22 +6,15 @@ from src.utils.post_process_utils import anisotropic_closing, hysteresis
 
 
 class PostProcess(nn.Module):
-    """
-    Post process tranfrorm for 3D input, containing probabilites of class 1.
-    Expected input shape: [B, D, H, W] or [D, H, W]
-    """
-
-    def __init__(self, T_low=0.50, T_high=0.90, z_radius=1, xy_radius=0, dust_min_size=100):
-        """
-        Args:
-            mean (float or tuple):
-                mean used in the normalization.
-                
-                len(tuple) should be equal to expected depth (D) or 1
-            std (float or tuple): std used in the normalization.
-
-                len(tuple) should be equal to expected depth (D) or 1
-        """
+    def __init__(
+        self,
+        T_low=0.50,
+        T_high=0.90,
+        z_radius=1,
+        xy_radius=0,
+        dust_min_size=100,
+        quantile_threshold=False
+    ):
         super().__init__()
 
         self.T_low = T_low
@@ -29,7 +22,7 @@ class PostProcess(nn.Module):
         self.z_radius = z_radius
         self.xy_radius = xy_radius
         self.dust_min_size = dust_min_size
-
+        self.quantile_threshold = quantile_threshold
 
     def forward(self, outputs, **batch):
         """
@@ -47,10 +40,17 @@ class PostProcess(nn.Module):
         result = outputs.clone()
         for i in range(outputs.shape[0]):
             volume = outputs[i]
+
+            if self.quantile_threshold:
+                vals = volume[volume > 0.05]
+                T_low = torch.quantile(vals, self.T_low).item()
+                T_high = torch.quantile(vals, self.T_high).item()
+            else:
+                T_low = self.T_low
+                T_high = self.T_high
+
             volume = volume.cpu().numpy()
-
-            mask = hysteresis(volume, self.T_low, self.T_high)
-
+            mask = hysteresis(volume, T_low, T_high)
             if not mask.any():
                 result[i] = torch.from_numpy(np.zeros_like(volume, dtype=np.uint8))
                 continue

@@ -5,3 +5,4 @@ outputs:
   z_radius: 1
   xy_radius: 0
   dust_min_size: 100
+  quantile_threshold: False
