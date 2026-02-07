@@ -87,7 +87,7 @@ class Trainer(BaseTrainer):
     def _log_batch(self, batch_idx, batch, mode="train"):
         if mode != "train":
             mask = batch['gt_mask'][0]
-            indices = np.arange(mask.shape[0])
+            indices = np.arange(mask.shape[0], step=10)
             logits = batch['logits'][0]
             prob = torch.softmax(logits, dim=0)[1]
             pred = logits.argmax(dim=0)

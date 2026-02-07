@@ -3,57 +3,46 @@ import torch.nn as nn
 
 class ZDrop3D(nn.Module):
     """
-    drop_mode:
-        - 'default': Randomly drops individual slices
-        - 'coarse': Drops contiguous blocks of slices
-        - 'combined': Randomly chooses between default and coarse for each application
     fill_mode:
-        - 'zero' (fills with fill_constant)
-        - 'neighbor' (fills with closest non-dropped slice)
+        - 'zero' (fills with zero)
+        - 'noise' (fills with gauss noise)
     """
     def __init__(
         self,
-        prob=0.15,
-        slice_prob=0.05,
-        drop_mode='default',
+        prob=0.25,
         fill_mode='zero',
-        block_size_min=5,
-        block_size_max=10,
+        num_blocks=[1, 3], # 1-based indexing
+        block_size=[5, 20], # 1-based indexing
     ):
         super().__init__()
         self.prob = prob
-        self.slice_prob = slice_prob
-        self.drop_mode = drop_mode
         self.fill_mode = fill_mode
-        self.block_size_min = block_size_min
-        self.block_size_max = block_size_max
+        self.num_blocks = num_blocks
+        self.block_size = block_size
 
-    def _get_masks(self, B, D, device):
-        m_rand = torch.rand((B, D), device=device) > self.slice_prob
-        block_sizes = torch.randint(self.block_size_min, self.block_size_max + 1, (B,), device=device)
+    def _get_drop_mask(self, B, D, device):
+        length_limits = [self.block_size[0], self.block_size[1] + 1]
+        num_limits = [self.num_blocks[0], self.num_blocks[1] + 1]
+        max_num = num_limits[1]
+
+        block_sizes = torch.randint(*length_limits, (B, max_num), device=device)
         max_starts = D - block_sizes
-        start_indices = torch.floor(torch.rand(B, device=device) * max_starts).long()
-        range_tensor = torch.arange(D, device=device).unsqueeze(0)
-        block_mask = (
-            (range_tensor >= start_indices.unsqueeze(1)) & 
-            (range_tensor < (start_indices + block_sizes).unsqueeze(1))
-        )
-        m_coarse = ~block_mask
-        return m_rand.bool(), m_coarse.bool()
+        start_indices = torch.floor(torch.rand(B, max_num, device=device) * max_starts).long()
 
-    def _compute_nearest_neighbor_map(self, mask):
-        B, D = mask.shape
-        device = mask.device
-        indices = torch.arange(D, device=device).expand(B, D)
-        inf = 1e6
-        valid_indices = torch.where(mask.bool(), indices, torch.full_like(indices, -inf))
-        left_idx = torch.cummax(valid_indices, dim=1).values
-        valid_indices_flip = torch.where(mask.bool(), indices, torch.full_like(indices, inf))
-        right_idx = torch.flip(torch.cummin(torch.flip(valid_indices_flip, dims=[1]), dim=1).values, dims=[1])
-        dist_left = indices - left_idx
-        dist_right = right_idx - indices
-        nearest_idx = torch.where(dist_left <= dist_right, left_idx, right_idx)
-        return nearest_idx.long().clamp(0, D - 1).unsqueeze(-1)
+        range_tensor = torch.arange(D, device=device).view(1, D, 1)
+        start_indices = start_indices.view(B, 1, max_num)
+        block_sizes = block_sizes.view(B, 1, max_num)
+        drop_mask = (
+            (range_tensor >= start_indices) & 
+            (range_tensor < start_indices + block_sizes)
+        )
+
+        num_blocks = torch.randint(*num_limits, (B,), device=device).view(B, 1, 1)
+        range_block_tensor = torch.arange(1, max_num + 1, device=device).view(1, 1, max_num)
+        block_mask = (range_block_tensor <= num_blocks)
+        drop_mask = (drop_mask * block_mask).any(axis=-1)
+        drop_mask = ~drop_mask
+        return drop_mask
 
     def _fill_with_zero(self, tensor, mask, keep_unlabeled=False):
         if keep_unlabeled:
@@ -61,40 +50,22 @@ class ZDrop3D(nn.Module):
             mask = mask | unlabeled_mask
         return tensor * mask
 
-    def _fill_with_nearest_neighbor(self, tensor, neighbor_map, apply_aug):
-        B, D, H, W = tensor.shape
-        flat_tensor = tensor.view(B, D, -1)
-        gather_idx = neighbor_map.expand(-1, -1, H * W)
-        filled_data = torch.gather(flat_tensor, 1, gather_idx).view(B, D, H, W)
-        return torch.where(apply_aug.view(B, 1, 1, 1), filled_data, tensor)
-
     def forward(self, volume, gt_mask, gt_skel, **batch):
         B, D, _, _ = volume.shape
         device = volume.device
 
         apply_aug = torch.rand(B, device=device) < self.prob
-        m_rand, m_coarse = self._get_masks(B, D, device)
-        if self.drop_mode == 'default':
-            mask = m_rand
-        elif self.drop_mode == 'coarse':
-            mask = m_coarse
-        elif self.drop_mode == 'combined':
-            mask = m_rand & m_coarse
+        drop_mask = self._get_drop_mask(B, D, device)
 
         old_tensors = dict(volume=volume, gt_mask=gt_mask, gt_skel=gt_skel)
         new_tensors = dict()
 
         if self.fill_mode == 'zero':
-            zero_mask = torch.where(apply_aug.unsqueeze(1), mask, torch.ones_like(mask, dtype=torch.bool))
+            zero_mask = torch.where(apply_aug.unsqueeze(1), drop_mask, torch.ones_like(drop_mask, dtype=torch.bool))
             zero_mask = zero_mask.view(B, D, 1, 1)
-        elif self.fill_mode == 'neighbor':
-            neighbor_map = self._compute_nearest_neighbor_map(mask) # [B, D]
 
         for tensor_name, tensor in old_tensors.items():
             if self.fill_mode == 'zero':
                 new_tensors[tensor_name] = self._fill_with_zero(tensor, zero_mask, keep_unlabeled=(tensor_name == 'gt_mask'))
-
-            elif self.fill_mode == 'neighbor':
-                new_tensors[tensor_name] = self._fill_with_nearest_neighbor(tensor, neighbor_map, apply_aug)
 
         return new_tensors
