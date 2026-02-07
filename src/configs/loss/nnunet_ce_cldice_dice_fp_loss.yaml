@@ -1,6 +1,6 @@
 _target_: src.loss.nnUnetLoss
 base_loss:
-  _target_: src.loss.CECldDiceFPSkelLoss
+  _target_: src.loss.BaseLoss
   num_classes: 2
   ce_weight: 1.0
   cld_weight: 0.4

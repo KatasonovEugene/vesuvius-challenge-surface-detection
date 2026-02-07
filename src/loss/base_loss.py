@@ -3,7 +3,7 @@ from torch import nn
 from src.loss.base_losses import *
 
 
-class CECldDiceFPSkelLoss(nn.Module):
+class BaseLoss(nn.Module):
     def __init__(
         self,
         num_classes,
@@ -12,9 +12,12 @@ class CECldDiceFPSkelLoss(nn.Module):
         dice_weight=0.0,
         skel_weight=0.0,
         fp_weight=0.0,
+        tversky_weight=0.0,
         eps=1e-7,
         use_downsampling=False,
         iterations=5,
+        tversky_alpha=0.7,
+        tversky_beta=0.3,
     ):
         super().__init__()
         self.num_classes = num_classes
@@ -32,6 +35,11 @@ class CECldDiceFPSkelLoss(nn.Module):
         )
         self.skel_loss = SkelLoss(eps=eps)
         self.fp_loss = FPLoss(eps=eps)
+        self.tversky_loss = TverskyLoss(
+            alpha=tversky_alpha,
+            beta=tversky_beta,
+            eps=eps
+        )
 
         self.losses = {
             "ce_loss": (ce_weight, self.ce_loss),
@@ -39,6 +47,7 @@ class CECldDiceFPSkelLoss(nn.Module):
             "dice_loss": (dice_weight, self.dice_loss),
             "skel_loss": (skel_weight, self.skel_loss),
             "fp_loss": (fp_weight, self.fp_loss),
+            "tversky_loss": (tversky_weight, self.tversky_loss),
         }
         self.names = []
         for loss_name, (loss_weight, _) in self.losses.items():

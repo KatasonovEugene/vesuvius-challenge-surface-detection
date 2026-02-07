@@ -2,8 +2,10 @@ _target_: src.loss.nnUnetLoss
 base_loss:
   _target_: src.loss.BaseLoss
   num_classes: 2
-  ce_weight: 1.0
   dice_weight: 1.0
   skel_weight: 0.5
+  tversky_weight: 0.7
   eps: 1e-7
+  tversky_alpha: 0.7
+  tversky_beta: 0.3
 ds_weights: null
