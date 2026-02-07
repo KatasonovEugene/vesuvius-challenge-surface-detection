@@ -9,7 +9,6 @@ from torch.utils.data import Dataset
 from src.datasets.base_dataset import BaseDataset
 from src.utils.io_utils import ROOT_PATH, read_json, write_json
 
-import vesuvius
 from vesuvius import Volume
 
 class SSLDataset(Dataset):

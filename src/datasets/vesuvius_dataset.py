@@ -62,7 +62,7 @@ class VesuviusDataset(BaseDataset):
             }
             if self.is_train:
                 item.update({
-                    'target_path': str(target_path / image_path.name)
+                    'target_path': str(target_path / image_path.name) # type: ignore
                 })
             is_item_in_dataset = (
                 (part == 'train' and i >= num_val_images) or
