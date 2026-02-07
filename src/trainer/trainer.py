@@ -3,6 +3,7 @@ from src.metrics.tracker import MetricTracker
 from src.trainer.base_trainer import BaseTrainer
 from src.utils.plot_utils import plot_batch, view_batch_3d
 import numpy as np
+import matplotlib.cm as cm
 
 
 class Trainer(BaseTrainer):
@@ -77,15 +78,22 @@ class Trainer(BaseTrainer):
 
         return out
 
+    def convert_heatmap(self, img):
+        img = img.detach().cpu().numpy()
+        cmap = cm.get_cmap("inferno")
+        colored = cmap(img)[..., :3]
+        return (colored * 255).astype(np.uint8)
+
     def _log_batch(self, batch_idx, batch, mode="train"):
         if mode != "train":
             mask = batch['gt_mask'][0]
             indices = np.arange(mask.shape[0])
             logits = batch['logits'][0]
-            prob = torch.softmax(logits, dim=0).max(dim=0)
+            prob = torch.softmax(logits, dim=0)[1]
             pred = logits.argmax(dim=0)
             mask = self.convert_image(mask)
             pred = self.convert_image(pred)
+            prob = self.convert_heatmap(prob)
             slices = {
                 "mask_axial_z": [mask[i, :, :] for i in indices],
                 "pred_axial_z": [pred[i, :, :] for i in indices],

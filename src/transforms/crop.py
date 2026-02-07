@@ -58,7 +58,7 @@ class RandSpatialCrop3D(nn.Module):
 
         result = {'volume': volume}
         if gt_mask is not None: 
-            result['mask'] = gt_skel
+            result['gt_mask'] = gt_mask
         if gt_skel is not None: 
             result['gt_skel'] = gt_skel
         return result
