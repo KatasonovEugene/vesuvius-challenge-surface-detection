@@ -23,6 +23,9 @@ def main(config):
     Args:
         config (DictConfig): hydra experiment config.
     """
+    if len(config.writer.run_name) == 0:
+        config.writer.run_name = "plug"
+
     set_random_seed(config.trainer.seed)
 
     project_config = OmegaConf.to_container(config)

@@ -27,14 +27,6 @@ train:
     alpha_x: 10.0
     alpha_y: 10.0
     alpha_z: 5.0
-  # z_drop:
-  #   _target_: src.transforms.ZDrop3D
-  #   prob: 0.4
-  #   slice_prob: 0.15
-  #   drop_mode: 'default'
-  #   fill_mode: 'zero'
-  #   block_size_min: 10
-  #   block_size_max: 32
   cutout3d:
     _target_: src.transforms.Cutout3D
     prob: 0.4

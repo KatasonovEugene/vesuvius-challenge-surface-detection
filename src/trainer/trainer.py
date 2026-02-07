@@ -79,17 +79,22 @@ class Trainer(BaseTrainer):
 
     def _log_batch(self, batch_idx, batch, mode="train"):
         if mode != "train":
-            indices = [40, 80, 120]
             mask = batch['gt_mask'][0]
-            pred = torch.softmax(batch['logits'], dim=1).argmax(dim=1)[0]
+            indices = np.arange(mask.shape[0])
+            logits = batch['logits'][0]
+            prob = torch.softmax(logits, dim=0).max(dim=0)
+            pred = logits.argmax(dim=0)
             mask = self.convert_image(mask)
             pred = self.convert_image(pred)
             slices = {
                 "mask_axial_z": [mask[i, :, :] for i in indices],
-                "mask_coronal_y": [mask[:, i, :] for i in indices],
-                "mask_sagittal_x": [mask[:, :, i] for i in indices],
                 "pred_axial_z": [pred[i, :, :] for i in indices],
+                "prob_axial_z": [prob[i, :, :] for i in indices],
+                "mask_coronal_y": [mask[:, i, :] for i in indices],
                 "pred_coronal_y": [pred[:, i, :] for i in indices],
+                "prob_coronal_y": [prob[:, i, :] for i in indices],
+                "mask_sagittal_x": [mask[:, :, i] for i in indices],
                 "pred_sagittal_x": [pred[:, :, i] for i in indices],
+                "prob_sagittal_x": [prob[:, :, i] for i in indices],
             }
             self.writer.add_slices(slices)
