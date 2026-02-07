@@ -6,6 +6,7 @@ train:
     prefer_skeleton: False
   skeletonize:
     _target_: src.transforms.Skeletonize # skeletonize must be after crop
+    dilation_iterations: 1
   to_torch:
     _target_: src.transforms.ToTorch # to_torch must be after skeletonize
   scale_intensity:
@@ -31,6 +32,7 @@ train:
 inference:
   skeletonize:
     _target_: src.transforms.Skeletonize # skeletonize must be after crop
+    dilation_iterations: 1
   to_torch:
     _target_: src.transforms.ToTorch # to_torch must be after skeletonize
   scale_intensity:

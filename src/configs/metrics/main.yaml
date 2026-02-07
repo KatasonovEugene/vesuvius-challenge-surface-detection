@@ -4,8 +4,6 @@ train:
     num_classes: 2
   - _target_: src.metrics.HardDiceMetric
     num_classes: 2
-  - _target_: src.metrics.FPMetric
-  - _target_: src.metrics.FNMetric
 inference:
   - _target_: src.metrics.SoftDiceMetric
     num_classes: 2
