@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import numpy as np
 from skimage.morphology import remove_small_objects
-from src.utils.post_process_utils import anisotropoc_closing, hysteresis
+from src.utils.post_process_utils import anisotropic_closing, hysteresis
 
 
 class PostProcess(nn.Module):
@@ -55,7 +55,7 @@ class PostProcess(nn.Module):
                 result[i] = torch.from_numpy(np.zeros_like(volume, dtype=np.uint8))
                 continue
 
-            mask = anisotropoc_closing(mask, self.z_radius, self.xy_radius)
+            mask = anisotropic_closing(mask, self.z_radius, self.xy_radius)
 
             if self.dust_min_size > 0:
                 mask = remove_small_objects(mask.astype(bool), min_size=self.dust_min_size)

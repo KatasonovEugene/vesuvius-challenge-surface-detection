@@ -35,7 +35,7 @@ def build_anisotropic_struct_(z_radius: int, xy_radius: int):
                     struct[cz + dz, cy + dy, cx + dx] = True
     return struct
 
-def anisotropoc_closing(mask: np.ndarray, z_radius: int, xy_radius: int):
+def anisotropic_closing(mask: np.ndarray, z_radius: int, xy_radius: int):
     if z_radius > 0 or xy_radius > 0:
         struct_close = build_anisotropic_struct_(z_radius, xy_radius)
         if struct_close is not None:

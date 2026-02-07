@@ -9,7 +9,7 @@ def gaussian_blur_3d(volume, sigma):
 
     assert(volume.ndim == 3)
 
-    size = int(2 * torch.ceil(sigma * 2) + 1)
+    size = int(2 * torch.ceil(torch.tensor(sigma) * 2) + 1)
 
     g = torch.exp((-(torch.arange(size, dtype=volume.dtype, device=volume.device) - size // 2)**2) / (2 * sigma**2))
     g = g / g.sum()
