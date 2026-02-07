@@ -6,9 +6,10 @@ import numpy as np
 
 
 class Trainer(BaseTrainer):
-    def __init__(self, *args, log_batch_plots=False, view_3d_online=False, **kwargs):
+    def __init__(self, *args, log_batch_plots=False, view_3d_online=False, log_batch_to_writer=True, **kwargs):
         super().__init__(*args, **kwargs)
         self.log_batch_plots = log_batch_plots
+        self.log_batch_to_writer = log_batch_to_writer
         self.view_3d_online = view_3d_online
 
     def process_batch(self, batch, metrics: MetricTracker):
@@ -78,6 +79,9 @@ class Trainer(BaseTrainer):
         return out
 
     def _log_batch(self, batch_idx, batch, mode="train"):
+        if not self.log_batch_to_writer:
+            return
+
         if mode != "train":
             mask = batch['gt_mask'][0]
             indices = np.arange(mask.shape[0])

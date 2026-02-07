@@ -68,6 +68,7 @@ def main(config):
         writer=writer,
         batch_transforms=batch_transforms,
         skip_oom=config.trainer.get("skip_oom", True),
+        log_batch_to_writer=config.trainer.get("log_batch_to_writer", True),
         log_batch_plots=config.trainer.get("log_batch_plots", False),
         view_3d_online=config.trainer.get("view_3d_online", False),
     )

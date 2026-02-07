@@ -22,18 +22,21 @@ class ClDiceLoss(nn.Module):
             return -F.max_pool3d(-volume.unsqueeze(1), kernel_size=2, stride=2).squeeze(1)
         raise Exception("Unsupported downsampling mode")
 
-    def forward(self, probs, gt_mask, gt_skel, **batch):
+    def forward(self, probs, gt_mask, gt_skel=None, **batch):
         dims = (1, 2, 3) 
         probs = probs[:, 1]
         valid_mask = (gt_mask != 2).float()
 
         if self.use_downsampling:
             probs = self.downsample(probs, 'avg')
-            gt_skel = self.downsample(gt_skel.float(), 'max').bool()
+            if gt_skel is not None:
+                gt_skel = self.downsample(gt_skel.float(), 'max').bool()
             valid_mask = self.downsample(valid_mask.float(), 'min').float()
             gt_mask = self.downsample((gt_mask == 1).float(), 'max').to(torch.int8)
 
         pred_skel = self.skeletonize(probs)['pred_skel']
+        if gt_skel is None:
+            gt_skel = self.skeletonize(gt_skel)['pred_skel']
 
         sens_intersect = (gt_skel * probs * valid_mask).sum(dim=dims)
         gt_skel_sum = (gt_skel * valid_mask).sum(dim=dims)

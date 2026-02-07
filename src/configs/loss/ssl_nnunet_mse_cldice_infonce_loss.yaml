@@ -1,0 +1,18 @@
+_target_: src.loss.SSLnnUnetLoss
+base_loss:
+  _target_: src.loss.MAEStructContrastiveLoss
+  loss_struct:
+    _target_: src.loss.MSEclDiceLoss
+    mse_weight: 0.4
+    cldice_weight: 0.3
+    use_downsampling: True
+    iterations: 5
+  loss_contrastive:
+    _target_: src.loss.BaseLossDictWrapper
+    loss:
+      _target_: src.loss.base_losses.InfoNCELoss
+      tau: 0.07
+    name: 'infonce_loss'
+  struct_weight: 1.0
+  contrastive_weight: 0.2
+ds_weights: null
