@@ -1,0 +1,71 @@
+defaults:
+  - contrastive@contrastive
+  - _self_
+
+train:
+  sem1:
+    _target_: src.transforms.TempRenameKeys
+    key_changes:
+      volume: temp
+      volume_sem1: volume
+    transforms: ${contrastive}
+
+  sem2:
+    _target_: src.transforms.TempRenameKeys
+    key_changes:
+      volume: temp
+      volume_sem2: volume
+    transforms: ${contrastive}
+
+  struct_and_target_augs:
+    _target_: src.transforms.TempRenameKeys
+    key_changes:
+      volume: gt_mask
+      volume_struct: volume
+    transforms:
+      flip1:
+        _target_: src.transforms.RandFlip3D
+        spatial_axis: 0 # D
+        prob: 0.5
+      flip2:
+        _target_: src.transforms.RandFlip3D
+        spatial_axis: 1 # H
+        prob: 0.5
+      flip3:
+        _target_: src.transforms.RandFlip3D
+        spatial_axis: 2 # W
+        prob: 0.5
+      rot90:
+        _target_: src.transforms.RandRotate90_3D
+        prob: 0.5
+        possible_k: [1, 3]
+        spatial_axes: [1, 2] # H W
+      elastic_deformation:
+        _target_: src.transforms.ElasticDeformation
+        prob: 0.3
+        sigma: 9.0
+        alpha_x: 6.0
+        alpha_y: 6.0
+        alpha_z: 3.0
+
+  only_struct_augs:
+    _target_: src.transforms.TempRenameKeys
+    key_changes:
+      volume: temp
+      volume_struct: volume
+    transforms:
+      shift_intensity:
+        _target_: src.transforms.RandShiftIntensity3D
+        offsets: 0.10
+        prob: 0.5
+      cutout3d:
+        _target_: src.transforms.Cutout3D
+        prob: 1.0
+        holes: [4, 8]
+        depth: [12, 32]
+        height: [48, 112]
+        width: [48, 112]
+        volume_fill_mode: "null"
+        return_cutout_mask: True
+
+inference: null

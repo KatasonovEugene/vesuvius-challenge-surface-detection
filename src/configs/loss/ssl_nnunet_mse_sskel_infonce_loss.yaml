@@ -2,11 +2,13 @@ _target_: src.loss.SSLnnUnetLoss
 base_loss:
   _target_: src.loss.MAEStructContrastiveLoss
   loss_struct:
-    _target_: src.loss.MSEclDiceLoss
-    mse_weight: 0.4
-    cldice_weight: 0.3
+    _target_: src.loss.SSkelMSETVLoss
+    mse_weight: 0.5
+    sskel_weight: 0.2
+    tv_weight: 0.05
     use_downsampling: True
     iterations: 5
+    tv_reduction: "mean"
   loss_contrastive:
     _target_: src.loss.BaseLossDictWrapper
     loss:
