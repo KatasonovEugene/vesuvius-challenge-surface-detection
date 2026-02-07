@@ -1,0 +1,24 @@
+import torch
+import torch.nn.functional as F
+
+
+def gaussian_blur_3d(volume, sigma):
+    '''
+    volume: [D, H, W]
+    '''
+
+    assert(volume.ndim == 3)
+
+    size = int(2 * torch.ceil(torch.tensor(sigma) * 2) + 1)
+
+    g = torch.exp((-(torch.arange(size, dtype=volume.dtype, device=volume.device) - size // 2)**2) / (2 * sigma**2))
+    g = g / g.sum()
+
+    S = g.shape[0]
+
+    volume = volume.unsqueeze(0).unsqueeze(0)
+    volume = F.conv3d(volume, g.view(1, 1, S, 1, 1), padding=(size//2, 0, 0))
+    volume = F.conv3d(volume, g.view(1, 1, 1, S, 1), padding=(0, size//2, 0))
+    volume = F.conv3d(volume, g.view(1, 1, 1, 1, S), padding=(0, 0, size//2))
+
+    return volume.squeeze(0).squeeze(0)

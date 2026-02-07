@@ -8,6 +8,7 @@ import copy
 from src.metrics.tracker import MetricTracker
 from src.trainer.base_trainer import BaseTrainer
 from src.model import Ensemble
+from src.utils.plot_utils import plot_results
 
 class Inferencer(BaseTrainer):
     """
@@ -68,6 +69,7 @@ class Inferencer(BaseTrainer):
         self.batch_transforms = batch_transforms
         self.tta_transforms = tta_transforms
         self.postprocess_transforms = postprocess_transforms
+        self.plot_results = self.config.get("plot_results", False)
 
         self._init_amp_config(self.cfg_trainer)
 
@@ -160,7 +162,13 @@ class Inferencer(BaseTrainer):
         else:
             batch['outputs'] = F.softmax(batch['logits'], dim=1)[:, 1]
 
-        batch = self.apply_transforms(self.postprocess_transforms, batch)
+        if self.plot_results:
+            batch['outputs_probs'] = batch['outputs']
+            batch = self.apply_transforms(self.postprocess_transforms, batch)
+            batch['outputs_post_processed'] = batch['outputs']
+            plot_results(**batch, prefix=f'{batch_idx}_')
+        else:
+            batch = self.apply_transforms(self.postprocess_transforms, batch)
 
         if metrics is not None and self.metrics is not None:
             for met in self.metrics["inference"]:

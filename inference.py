@@ -36,6 +36,12 @@ def main(config):
         device = config.inferencer.device
 
     dataloaders, batch_transforms = get_dataloaders(config, device)
+    if "val" in dataloaders:
+        output_part = "val"
+    elif "test" in dataloaders:
+        output_part = "test"
+    else:
+        output_part = next(iter(dataloaders.keys()))
     tta_transforms = instantiate(config.tta_transforms)
     postprocess_transforms = instantiate(config.postprocess_transforms)
 
@@ -71,18 +77,17 @@ def main(config):
 
     logs = inferencer.run_inference()
 
-    if is_kaggle_env:
-        root_dir = Path('/kaggle/input/vesuvius-challenge-surface-detection')
-        zip_path = "/kaggle/working/submission.zip"
+    root_dir = Path('/kaggle/input/vesuvius-challenge-surface-detection')
+    zip_path = "/kaggle/working/submission.zip"
 
-        test_df = pd.read_csv(f"{root_dir}/test.csv")
+    test_df = pd.read_csv(f"{root_dir}/test.csv")
 
-        with zipfile.ZipFile(
-            zip_path, "w", compression=zipfile.ZIP_DEFLATED
-        ) as z:
-            for image_id in test_df["id"]:
-                out_path = save_path / 'test' / f"{image_id}.tif"
-                z.write(out_path, arcname=f"{image_id}.tif")
+    with zipfile.ZipFile(
+        zip_path, "w", compression=zipfile.ZIP_DEFLATED
+    ) as z:
+        for image_id in test_df["id"]:
+            out_path = save_path / output_part / f"{image_id}.tif"
+            z.write(out_path, arcname=f"{image_id}.tif")
 
     for part in logs.keys():
         for key, value in logs[part].items():

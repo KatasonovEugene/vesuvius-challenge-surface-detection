@@ -1,0 +1,11 @@
+outputs:
+  _target_: src.transforms.SmartPostProcess
+  T_low: 0.3
+  T_high: 0.7
+  sigmas: [1.0, 2.0]
+  beta: 0.5
+  z_radius: 1
+  xy_radius: 0
+  dust_min_size: 100
+  eigen_mode: "approx"
+  quantile_threshold: True

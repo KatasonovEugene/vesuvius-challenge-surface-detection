@@ -15,3 +15,4 @@ inferencer:
   use_amp: False
   amp_dtype: "bfloat16"
   from_pretrained: "models/nnunet-elastic.pth"
+  plot_results: True
