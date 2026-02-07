@@ -1,0 +1,33 @@
+defaults:
+  - model: ssl_nnunet
+  - writer: wandb_ssl
+  - metrics: empty
+  - datasets: ssl_dataset
+  - dataloader: default
+  - batch_transforms: ssl
+  - instance_transforms: ssl
+  - loss: ssl_nnunet_mse_sskel_infonce_loss
+  - optimizer: adamw_ssl
+  - lr_scheduler: warmup_cosine_ssl
+  - _self_
+
+trainer:
+  log_step: 10
+  n_epochs: 100
+  epoch_len: 1000
+  device_tensors: ["volume", "volume_struct", "volume_sem1", "volume_sem2"]
+  use_amp: False
+  amp_dtype: "bfloat16"
+  resume_from: null
+  from_pretrained: null
+  device: auto
+  override: False
+  monitor: "min val_loss"
+  save_period: 5
+  early_stop: ${trainer.n_epochs}
+  save_dir: "saved"
+  seed: 1
+  log_batch_plots: False
+  log_batch_to_writer: False
+  view_3d_online: False
+  grad_accum_steps: 4

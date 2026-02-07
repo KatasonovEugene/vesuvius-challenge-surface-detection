@@ -6,40 +6,48 @@ import numpy as np
 
 
 class Trainer(BaseTrainer):
-    def __init__(self, *args, log_batch_plots=False, view_3d_online=False, log_batch_to_writer=True, **kwargs):
+    def __init__(self, *args, log_batch_plots=False, view_3d_online=False, log_batch_to_writer=True, grad_accum_steps=1, **kwargs):
         super().__init__(*args, **kwargs)
         self.log_batch_plots = log_batch_plots
         self.log_batch_to_writer = log_batch_to_writer
         self.view_3d_online = view_3d_online
+        self.grad_accum_steps = grad_accum_steps
 
-    def process_batch(self, batch, metrics: MetricTracker):
+    def process_batch(self, batch, batch_idx, metrics: MetricTracker):
         batch = self.move_batch_to_device(batch)
         batch = self.transform_batch(batch)
 
         metric_funcs = self.metrics["inference"]
         if self.is_train:
             metric_funcs = self.metrics["train"]
-            self.optimizer.zero_grad()
+            if batch_idx % self.grad_accum_steps == 0:
+                self.optimizer.zero_grad()
 
         with self._autocast_context():
             outputs = self.model(**batch)
             batch.update(outputs)
             all_losses = self.criterion(**batch)
+            if self.is_train:
+                for loss_name in all_losses.keys():
+                    all_losses[loss_name] = all_losses[loss_name] / self.grad_accum_steps
         batch.update(all_losses)
 
+        self.train_step_count += 1
         if self.is_train:
             if self.scaler is not None:
                 self.scaler.scale(batch["loss"]).backward()
-                self.scaler.unscale_(self.optimizer)
-                self._clip_grad_norm()
-                self.scaler.step(self.optimizer)
-                self.scaler.update()
+                if batch_idx % self.grad_accum_steps == 0:
+                    self.scaler.unscale_(self.optimizer)
+                    self._clip_grad_norm()
+                    self.scaler.step(self.optimizer)
+                    self.scaler.update()
             else:
                 batch["loss"].backward()
-                self._clip_grad_norm()
-                self.optimizer.step()
+                if batch_idx % self.grad_accum_steps == 0:
+                    self._clip_grad_norm()
+                    self.optimizer.step()
 
-            if self.lr_scheduler is not None:
+            if self.lr_scheduler is not None and batch_idx % self.grad_accum_steps == 0:
                 self.lr_scheduler.step()
 
         if self.log_batch_plots:
@@ -56,7 +64,7 @@ class Trainer(BaseTrainer):
             view_batch_3d(**batch)
 
         for loss_name in self.criterion.names:
-            metrics.update(loss_name, batch[loss_name].item())
+            metrics.update(loss_name, batch[loss_name].item() * self.grad_accum_steps)
 
         for met in metric_funcs:
             metric_result = met(**batch)
@@ -67,7 +75,7 @@ class Trainer(BaseTrainer):
                 metrics.update(met.name, metric_result)
 
         return batch
-    
+
     def convert_image(self, img):
         img = img.detach().long().cpu().numpy()
         out = np.zeros((*img.shape, 3), dtype=np.uint8)

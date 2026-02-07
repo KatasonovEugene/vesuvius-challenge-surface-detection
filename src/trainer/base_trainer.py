@@ -154,7 +154,7 @@ class BaseTrainer:
         """
         try:
             self._train_process()
-        except KeyboardInterrupt as e:
+        except Exception as e:
             self.logger.info("Saving model on keyboard interrupt")
             self._save_checkpoint(self._last_epoch, save_best=False)
             raise e
@@ -299,6 +299,7 @@ class BaseTrainer:
             ):
                 batch = self.process_batch(
                     batch,
+                    batch_idx=batch_idx,
                     metrics=self.evaluation_metrics,
                 )
             self.writer.set_step(epoch * self.epoch_len, part)

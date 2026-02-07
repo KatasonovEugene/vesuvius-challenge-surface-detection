@@ -7,5 +7,5 @@ class VolumeCopy(nn.Module):
         self.name = name
 
     def forward(self, volume, **batch):
-        result = {self.name: volume}
+        result = {self.name: volume.clone()}
         return result

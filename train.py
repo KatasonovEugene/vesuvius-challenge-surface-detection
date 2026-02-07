@@ -48,7 +48,7 @@ def main(config):
     epoch_len = config.trainer.get("epoch_len")
 
     if 'steps' in config.lr_scheduler:
-        config.lr_scheduler['steps'] = config.trainer.n_epochs * epoch_len
+        config.lr_scheduler['steps'] = config.trainer.n_epochs * (epoch_len // config.trainer.get("grad_accum_steps", 1))
     if 'max_epochs' in config.lr_scheduler:
         config.lr_scheduler['max_epochs'] = config.trainer.n_epochs
 
@@ -71,6 +71,7 @@ def main(config):
         log_batch_to_writer=config.trainer.get("log_batch_to_writer", True),
         log_batch_plots=config.trainer.get("log_batch_plots", False),
         view_3d_online=config.trainer.get("view_3d_online", False),
+        grad_accum_steps=config.trainer.get("grad_accum_steps", 1),
     )
 
     trainer.train()

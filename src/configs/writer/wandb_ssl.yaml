@@ -1,0 +1,7 @@
+_target_: src.logger.WandBWriter
+project_name: "vesuvius-challenge-surface-detection"
+entity: "TKNP"
+run_name: "ssl_nnunet_mse_sskel_infonce_loss"
+mode: "offline"
+log_checkpoints: False
+id_length: 8

@@ -1,0 +1,6 @@
+_target_: src.lr_scheduler.WarmupCosineScheduler
+min_lr: 0
+max_lr: 3e-4
+min_end_lr: 1e-6
+warmup_ratio: 0.03
+steps: null
