@@ -1,6 +1,7 @@
 import warnings
 
 import hydra
+from sympy import root
 import torch
 from hydra.utils import instantiate
 
@@ -77,17 +78,19 @@ def main(config):
 
     logs = inferencer.run_inference()
 
-    root_dir = Path('/kaggle/input/vesuvius-challenge-surface-detection')
-    zip_path = "/kaggle/working/submission.zip"
+    if is_kaggle_env:
+        zip_path = "/kaggle/working/submission.zip"
+    else:
+        zip_path = ROOT_PATH / "submissions" / f"{run_name}.zip"
+        zip_path.parent.mkdir(exist_ok=True, parents=True)
 
-    test_df = pd.read_csv(f"{root_dir}/test.csv")
-
+    dir_path = save_path / output_part
     with zipfile.ZipFile(
         zip_path, "w", compression=zipfile.ZIP_DEFLATED
     ) as z:
-        for image_id in test_df["id"]:
-            out_path = save_path / output_part / f"{image_id}.tif"
-            z.write(out_path, arcname=f"{image_id}.tif")
+        for file in dir_path.rglob('*'):
+            if file.is_file():
+                z.write(file, arcname=file.relative_to(dir_path))
 
     for part in logs.keys():
         for key, value in logs[part].items():
