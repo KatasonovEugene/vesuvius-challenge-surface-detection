@@ -5,8 +5,8 @@ defaults:
   - datasets: default
   - dataloader: default
   - batch_transforms: main
-  - instance_transforms: main
-  - loss: nnunet_ce_dice_fp_skel_loss
+  - instance_transforms: sdf
+  - loss: nnunet_boundary_ce_dice_fp_skel_loss
   - optimizer: adamw
   - lr_scheduler: warmup_cosine
   - _self_
@@ -15,7 +15,7 @@ trainer:
   log_step: 10
   n_epochs: 50
   epoch_len: 1000
-  device_tensors: ["volume", "gt_mask", "gt_skel"]
+  device_tensors: ["volume", "gt_mask", "gt_skel", "gt_sdf"]
   use_amp: False
   amp_dtype: "bfloat16"
   resume_from: null
