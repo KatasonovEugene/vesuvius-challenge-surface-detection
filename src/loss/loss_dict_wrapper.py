@@ -14,7 +14,13 @@ class BaseLossDictWrapper(nn.Module):
 
     def forward(self, **batch):
         loss = self.loss(**batch)
-        return {
-            self.name: loss,
-            'loss': loss
-        }
+
+        if isinstance(loss, dict):
+            result = {self.name: loss['loss']}
+            result.update(loss)
+            return result
+        else:
+            return {
+                self.name: loss,
+                'loss': loss
+            }

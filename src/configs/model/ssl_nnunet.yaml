@@ -10,7 +10,7 @@ model:
     kernel_size: [[3, 3, 3],[3, 3, 3],[3, 3, 3],[3, 3, 3],[3, 3, 3],[3, 3, 3]]
     strides: [[1, 1, 1],[2, 2, 2],[2, 2, 2],[2, 2, 2],[2, 2, 2],[2, 2, 2]]
     deep_supr_num: 1
-  projection_hidden_dims: [512, 128]
+  projection_hidden_dims: [512, 512, 128]
 roi_size: [160, 160, 160]
 sw_batch_size: 1
 overlap: 0.5

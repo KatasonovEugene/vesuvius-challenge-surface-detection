@@ -13,6 +13,8 @@ base_loss:
     _target_: src.loss.BaseLossDictWrapper
     loss:
       _target_: src.loss.base_losses.InfoNCELoss
+      encoding_dim: 128
+      queue_size: 4096
       tau: 0.2
     name: 'infonce_loss'
   struct_weight: 1.0

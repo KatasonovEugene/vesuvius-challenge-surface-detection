@@ -1,0 +1,6 @@
+device: "auto"
+train:
+  - _target_: src.metrics.PositiveSimilarity
+  - _target_: src.metrics.NegativeSimilarity
+  - _target_: src.metrics.EmbeddingStd
+inference: null

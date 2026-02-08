@@ -43,4 +43,7 @@ class InfoNCELoss(nn.Module):
 
         self._update_queue(sem2)
 
-        return loss
+        return {
+            'loss': loss,
+            'neg_sim': sim_matrix[:, B:].mean(),
+        }
