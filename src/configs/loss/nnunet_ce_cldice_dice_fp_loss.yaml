@@ -13,5 +13,6 @@ base_loss:
   cld_sigma: 0.8
   cld_use_downsampling: False
   cld_use_hard_diff: True
+  cld_use_fast_hard: True
   cld_iterations: 1
 ds_weights: null

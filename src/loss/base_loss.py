@@ -20,6 +20,8 @@ class BaseLoss(nn.Module):
         cld_sigma=0.8,
         cld_use_downsampling=False,
         cld_use_hard_diff=False,
+        cld_use_fast_hard=True,
+        cld_fast_kwargs=None,
         cld_iterations=1,
         iterations=5,
         tversky_alpha=0.7,
@@ -36,6 +38,8 @@ class BaseLoss(nn.Module):
             sigma=cld_sigma,
             use_downsampling=cld_use_downsampling,
             use_hard_diff=cld_use_hard_diff,
+            use_fast_hard=cld_use_fast_hard,
+            fast_kwargs=cld_fast_kwargs,
             iterations=cld_iterations,
             eps=eps,
         )

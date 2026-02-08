@@ -74,7 +74,6 @@ class SkeletonizeDiffHard(torch.nn.Module):
         return img
 
 
-
     def _prepare_input(self, img):
         """
         Function to check that the input image is compatible with the subsequent calculations.
@@ -474,4 +473,128 @@ class SkeletonizeDiffHard(torch.nn.Module):
         if self.expanded_dims:
             img = torch.squeeze(img, dim=2)
         
+        return img
+
+
+
+class SkeletonizeDiffFast(torch.nn.Module):
+    """
+    Fast 3D skeletonization with relaxed topology checks.
+    This version prioritizes speed over exact topology preservation.
+    """
+
+    def __init__(
+        self,
+        probabilistic=True,
+        beta=0.33,
+        tau=1.0,
+        num_iter=3,
+        min_neighbors=2,
+        preserve_junctions=True,
+        junction_threshold=6,
+    ):
+        super().__init__()
+
+        self.probabilistic = probabilistic
+        self.tau = tau
+        self.beta = beta
+        self.num_iter = num_iter
+        self.min_neighbors = min_neighbors
+        self.preserve_junctions = preserve_junctions
+        self.junction_threshold = junction_threshold
+
+        kernel_n26 = torch.ones((3, 3, 3), dtype=torch.float32)
+        kernel_n26[1, 1, 1] = 0.0
+        kernel_n6 = torch.zeros((3, 3, 3), dtype=torch.float32)
+        kernel_n6[1, 1, 0] = 1.0
+        kernel_n6[1, 1, 2] = 1.0
+        kernel_n6[1, 0, 1] = 1.0
+        kernel_n6[1, 2, 1] = 1.0
+        kernel_n6[0, 1, 1] = 1.0
+        kernel_n6[2, 1, 1] = 1.0
+
+        self.register_buffer("kernel_n26", kernel_n26.view(1, 1, 3, 3, 3))
+        self.register_buffer("kernel_n6", kernel_n6.view(1, 1, 3, 3, 3))
+
+    def forward(self, img):
+        img = self._prepare_input(img)
+
+        if self.probabilistic:
+            img = self._stochastic_discretization(img)
+
+        x_offsets = [0, 1, 0, 1, 0, 1, 0, 1]
+        y_offsets = [0, 0, 1, 1, 0, 0, 1, 1]
+        z_offsets = [0, 0, 0, 0, 1, 1, 1, 1]
+
+        for _ in range(self.num_iter):
+            is_endpoint = self._fast_endpoint_check(img)
+
+            for x_offset, y_offset, z_offset in zip(x_offsets, y_offsets, z_offsets):
+                is_simple = self._fast_simple_check(img[:, :, x_offset:, y_offset:, z_offset:])
+                deletion_candidates = is_simple * (1 - is_endpoint[:, :, x_offset::2, y_offset::2, z_offset::2])
+                deletion_candidates = deletion_candidates * img[:, :, x_offset::2, y_offset::2, z_offset::2]
+                img[:, :, x_offset::2, y_offset::2, z_offset::2] = torch.min(
+                    img[:, :, x_offset::2, y_offset::2, z_offset::2].clone(),
+                    1 - deletion_candidates,
+                )
+
+        img = self._prepare_output(img)
+        return img
+
+    def _prepare_input(self, img):
+        if img.dim() == 5:
+            self.expanded_dims = False
+        elif img.dim() == 4:
+            self.expanded_dims = True
+            img = img.unsqueeze(2)
+        else:
+            raise Exception("Only two-or three-dimensional images (tensor dimensionality of 4 or 5) are supported as input.")
+
+        if img.shape[2] == 2 or img.shape[3] == 2 or img.shape[4] == 2 or img.shape[3] == 1 or img.shape[4] == 1:
+            raise Exception()
+
+        if img.min() < 0.0 or img.max() > 1.0:
+            raise Exception("Image values must lie between 0 and 1.")
+
+        img = F.pad(img, (1, 1, 1, 1, 1, 1), value=0)
+
+        return img
+
+    def _stochastic_discretization(self, img):
+        alpha = (img + 1e-8) / (1.0 - img + 1e-8)
+
+        uniform_noise = torch.empty_like(img).uniform_(1e-8, 1 - 1e-8)
+        logistic_noise = (torch.log(uniform_noise) - torch.log(1 - uniform_noise))
+
+        img = torch.sigmoid((torch.log(alpha) + logistic_noise * self.beta) / self.tau)
+        img = (img.detach() > 0.5).float() - img.detach() + img
+
+        return img
+
+    def _fast_endpoint_check(self, img):
+        img = F.pad(img, (1, 1, 1, 1, 1, 1), value=0)
+        num_twentysix_neighbors = F.conv3d(img, self.kernel_n26)
+        return (num_twentysix_neighbors <= 1.0).float()
+
+    def _fast_simple_check(self, img):
+        img = F.pad(img, (1, 1, 1, 1, 1, 1), value=0)
+
+        num_twentysix_neighbors = F.conv3d(img, self.kernel_n26, stride=2)
+        num_six_neighbors = F.conv3d(img, self.kernel_n6, stride=2)
+
+        is_boundary = (num_six_neighbors < 6.0).float()
+        has_enough_neighbors = (num_twentysix_neighbors >= float(self.min_neighbors)).float()
+
+        if self.preserve_junctions:
+            not_junction = (num_twentysix_neighbors < float(self.junction_threshold)).float()
+            return is_boundary * has_enough_neighbors * not_junction
+
+        return is_boundary * has_enough_neighbors
+
+    def _prepare_output(self, img):
+        img = img[:, :, 1:-1, 1:-1, 1:-1]
+
+        if self.expanded_dims:
+            img = torch.squeeze(img, dim=2)
+
         return img

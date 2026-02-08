@@ -3,12 +3,24 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from src.transforms.skeletonize_diff import SkeletonizeDiff
-from src.transforms.skeletonize_diff_hard import SkeletonizeDiffHard
+from src.transforms.skeletonize_diff_hard import SkeletonizeDiffHard, SkeletonizeDiffFast
 from src.utils.transform_utils import gaussian_blur_batch_3d
 
 
 class ClDiceLoss(nn.Module):
-    def __init__(self, calc_gt_skel=False, smooth_pred_skel=False, smooth_mask_skel=False, sigma=0.8, use_downsampling=False, use_hard_diff=False, iterations=1, eps=1e-7):
+    def __init__(
+        self,
+        calc_gt_skel=False,
+        smooth_pred_skel=False,
+        smooth_mask_skel=False,
+        sigma=0.8,
+        use_downsampling=False,
+        use_hard_diff=False,
+        use_fast_hard=True,
+        fast_kwargs=None,
+        iterations=1,
+        eps=1e-7,
+    ):
         super().__init__()
         self.eps = eps
         self.calc_gt_skel = calc_gt_skel
@@ -18,8 +30,13 @@ class ClDiceLoss(nn.Module):
         self.sigma = sigma
         self.use_hard_diff = use_hard_diff
         if use_hard_diff:
-            self.skeletonize_mask = SkeletonizeDiffHard(probabilistic=False, num_iter=iterations, simple_point_detection='Boolean')
-            self.skeletonize_pred = SkeletonizeDiffHard(probabilistic=True, num_iter=iterations, simple_point_detection='Boolean')
+            fast_kwargs = fast_kwargs or {}
+            if use_fast_hard:
+                self.skeletonize_mask = SkeletonizeDiffFast(probabilistic=False, num_iter=iterations, **fast_kwargs)
+                self.skeletonize_pred = SkeletonizeDiffFast(probabilistic=True, num_iter=iterations, **fast_kwargs)
+            else:
+                self.skeletonize_mask = SkeletonizeDiffHard(probabilistic=False, num_iter=iterations, simple_point_detection='Boolean')
+                self.skeletonize_pred = SkeletonizeDiffHard(probabilistic=True, num_iter=iterations, simple_point_detection='Boolean')
         else:
             self.skeletonize_mask = self.skeletonize_pred = SkeletonizeDiff(iterations=iterations)
 
