@@ -192,15 +192,18 @@ class SmartPostProcess(nn.Module):
 
             # plot_results(outputs, smoothed_volume.unsqueeze(0), surfaceness.unsqueeze(0), volume.unsqueeze(0), prefix='processed')
 
+            volume = volume.cpu().numpy()
             if self.quantile_threshold:
                 vals = volume[volume > 0.05]
-                T_high = torch.quantile(vals, self.T_high).item()
-                T_low = torch.quantile(vals, self.T_low).item()
+                if volume.size == 0:
+                    result[i] = torch.from_numpy(np.zeros_like(volume, dtype=np.uint8))
+                    continue
+                T_high = np.percentile(vals, self.T_high * 100)
+                T_low = np.percentile(vals, self.T_low * 100)
             else:
-                T_high = self.T_high
                 T_low = self.T_low
+                T_high = self.T_high
 
-            volume = volume.cpu().numpy()
             mask = hysteresis(volume, T_low, T_high)
             if not mask.any():
                 result[i] = torch.from_numpy(np.zeros_like(volume, dtype=np.uint8))
