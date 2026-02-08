@@ -1,5 +1,5 @@
 defaults:
-  - contrastive@contrastive
+  - /batch_transforms/contrastive@contrastive
   - _self_
 
 train:
