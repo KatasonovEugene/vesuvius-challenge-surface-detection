@@ -150,12 +150,12 @@ class BaseTrainer:
 
     def train(self):
         """
-        Wrapper around training process to save model on keyboard interrupt.
+        Wrapper around training process to save model on exception or keyboard interrupt.
         """
         try:
             self._train_process()
         except Exception as e:
-            self.logger.info("Saving model on keyboard interrupt")
+            self.logger.info("Saving model on exception or keyboard interrupt")
             self._save_checkpoint(self._last_epoch, save_best=False)
             raise e
 

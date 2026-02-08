@@ -9,7 +9,7 @@ class Cutout3D(nn.Module):
     Expected input shape: [B, D, H, W]
     """
 
-    def __init__(self, prob, holes, depth, height, width, volume_fill_mode="null", mask_fill_mode="unlabeled"):
+    def __init__(self, prob, holes, depth, height, width, return_cutout_mask=False, volume_fill_mode="null", mask_fill_mode="unlabeled"):
         """
         Args:
             prob (float):
@@ -17,7 +17,7 @@ class Cutout3D(nn.Module):
             holes (int or tuple):
                 The number of cutout holes.
 
-                Can be tuple of two integers defining the range [min, max] of number of holse.
+                Can be tuple of two integers defining the range [min, max] of number of holes.
             depth (int or tuple):
                 A depth of the cutout hole.    
 
@@ -65,6 +65,8 @@ class Cutout3D(nn.Module):
         self.volume_fill_mode = volume_fill_mode
         self.mask_fill_mode = mask_fill_mode
 
+        self.return_cutout_mask = return_cutout_mask
+
     def fill_with_zeros(self, volume):
         return torch.zeros_like(volume)
 
@@ -96,9 +98,9 @@ class Cutout3D(nn.Module):
             mask = torch.where(fill_mask, self.fill_with_unlabeled(mask), mask)
         return mask
 
-    def cutout(self, volume, gt_mask, gt_skel, **batch):
+    def cutout(self, volume, gt_mask, gt_skel):
         if volume.shape[0] == 0:
-            return volume, gt_mask, gt_skel
+            return volume, gt_mask, gt_skel, torch.zeros_like(volume, dtype=torch.bool)
 
         size = torch.cat([
             torch.randint(self.depth[0], self.depth[1] + 1, size=(1,), device=volume.device),
@@ -123,11 +125,20 @@ class Cutout3D(nn.Module):
         b_idx = torch.arange(volume.shape[0], device=volume.device)[:, None, None, None]
 
         volume = self.volume_fill(volume, b_idx, z_idx, y_idx, x_idx)
-        gt_mask = self.mask_fill(gt_mask, b_idx, z_idx, y_idx, x_idx)
-        gt_skel = self.mask_fill(gt_skel, b_idx, z_idx, y_idx, x_idx)
-        return volume, gt_mask, gt_skel
+        if gt_mask is not None:
+            gt_mask = self.mask_fill(gt_mask, b_idx, z_idx, y_idx, x_idx)
+        if gt_skel is not None:
+            gt_skel = self.mask_fill(gt_skel, b_idx, z_idx, y_idx, x_idx)
 
-    def forward(self, volume, gt_mask, gt_skel, **batch):
+        if self.return_cutout_mask:
+            cur_cutted_mask = torch.zeros_like(volume, device=volume.device, dtype=torch.bool)
+            cur_cutted_mask[b_idx, z_idx, y_idx, x_idx] = True
+        else:
+            cur_cutted_mask = None
+
+        return volume, gt_mask, gt_skel, cur_cutted_mask
+
+    def forward(self, volume, gt_mask=None, gt_skel=None, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
@@ -149,13 +160,29 @@ class Cutout3D(nn.Module):
         num_holes = torch.randint(self.holes[0], self.holes[1] + 1, size=(volume.shape[0],), device=volume.device)
         num_holes = apply_transform * num_holes
 
+        if self.return_cutout_mask:
+            cutout_mask = torch.zeros_like(volume, device=volume.device, dtype=torch.bool)
+        else:
+            cutout_mask = None
+
         for hole_idx in range(1, self.holes[1] + 1):
             apply = (num_holes >= hole_idx).view(-1, 1, 1, 1)
 
-            cutted_volume, cutted_gt_mask, cutted_gt_skel = self.cutout(volume, gt_mask, gt_skel)
+            cutted_volume, cutted_gt_mask, cutted_gt_skel, cur_cutted_mask = self.cutout(volume, gt_mask, gt_skel)
+            if self.return_cutout_mask:
+                cutout_mask = cutout_mask | (cur_cutted_mask & apply) # type:ignore
 
             volume = torch.where(apply, cutted_volume, volume)
-            gt_mask = torch.where(apply, cutted_gt_mask, gt_mask)
-            gt_skel = torch.where(apply, cutted_gt_skel, gt_skel)
+            if gt_mask is not None:
+                gt_mask = torch.where(apply, cutted_gt_mask, gt_mask)
+            if gt_skel is not None:
+                gt_skel = torch.where(apply, cutted_gt_skel, gt_skel)
 
-        return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel}
+        result = {'volume': volume}
+        if gt_mask is not None:
+            result['gt_mask'] = gt_mask
+        if gt_skel is not None:
+            result['gt_skel'] = gt_skel
+        if self.return_cutout_mask:
+            result['cutout_mask'] = cutout_mask
+        return result

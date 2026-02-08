@@ -15,6 +15,12 @@ class MAEStructContrastiveLoss(nn.Module):
         self.struct_weight = struct_weight
         self.contrastive_weight = contrastive_weight
 
+        self.names = [loss_name for loss_name in self.loss_struct.names if loss_name != 'loss']
+        for loss_name in self.loss_contrastive.names:
+            if loss_name != 'loss':
+                self.names.append(loss_name)
+        self.names.append("loss")
+
     def forward(self, logits, sem1, sem2, **batch):
         loss_struct = self.loss_struct(struct=logits, gt_struct=batch['volume'])
         loss_contrastive = self.loss_contrastive(sem1=sem1, sem2=sem2)

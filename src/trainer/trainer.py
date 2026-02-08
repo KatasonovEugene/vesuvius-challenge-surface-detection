@@ -12,6 +12,7 @@ class Trainer(BaseTrainer):
         self.log_batch_to_writer = log_batch_to_writer
         self.view_3d_online = view_3d_online
         self.grad_accum_steps = grad_accum_steps
+        self.train_step_count = 0
 
     def process_batch(self, batch, batch_idx, metrics: MetricTracker):
         batch = self.move_batch_to_device(batch)

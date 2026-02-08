@@ -21,6 +21,7 @@ class SSkelMSETVLoss(nn.Module):
         self.mse_loss = MSELoss(eps=eps)
         self.sskel_loss = SLLSkelLoss(use_downsampling=use_downsampling, iterations=iterations, eps=eps)
         self.tv_loss = TVLoss(reduction=tv_reduction)
+        self.names = ['mse_loss', 'sskel_loss', 'tv_loss', 'loss']
 
     def forward(self, struct, gt_struct, masked, **batch):
         mse_loss = self.mse_loss(struct=struct, gt_struct=gt_struct, masked=masked)

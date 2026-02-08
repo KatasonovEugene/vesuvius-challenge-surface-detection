@@ -20,12 +20,10 @@ class SSLDataset(Dataset):
         *args,
         **kwargs,
     ):
-        self.volumes = [
-            Volume(type="zarr", path="https://data.aws.ash2txt.org/samples/PHerc0139/volumes/20250728140407-9.362um-1.2m-113keV-masked.zarr/0"),
-            Volume(type="zarr", path="https://data.aws.ash2txt.org/samples/PHerc0009B/volumes/20250521125136-8.640um-1.2m-116keV-masked.zarr/0"),
+        self.volumes_paths = [
+            "https://data.aws.ash2txt.org/samples/PHerc0139/volumes/20250728140407-9.362um-1.2m-113keV-masked.zarr/0/",
+            "https://data.aws.ash2txt.org/samples/PHerc0009B/volumes/20250521125136-8.640um-1.2m-116keV-masked.zarr/0/",
         ]
-
-        self.shapes = [volume.shape() for volume in self.volumes]
 
         assert part in ['train']
         self.is_train = True
@@ -58,14 +56,17 @@ class SSLDataset(Dataset):
             for transform_name in self.instance_transforms.keys():
                 if transform_name == 'contrastive':
                     instance_data['temp'] = instance_data['volume']
-
                     instance_data['volume'] = instance_data['volume_sem1']
-                    result = self.instance_transforms[transform_name](**instance_data)
-                    instance_data['volume_sem1'] = result['volume']
+                    for transform_name2 in self.instance_transforms[transform_name].keys():
+                        result = self.instance_transforms[transform_name][transform_name2](**instance_data)
+                        instance_data.update(result)
+                    instance_data['volume_sem1'] = instance_data['volume']
 
                     instance_data['volume'] = instance_data['volume_sem2']
-                    result = self.instance_transforms[transform_name](**instance_data)
-                    instance_data['volume_sem2'] = result['volume']
+                    for transform_name2 in self.instance_transforms[transform_name].keys():
+                        result = self.instance_transforms[transform_name][transform_name2](**instance_data)
+                        instance_data.update(result)
+                    instance_data['volume_sem2'] = instance_data['volume']
 
                     instance_data['volume'] = instance_data['temp']
                     instance_data.pop('temp')
@@ -73,8 +74,10 @@ class SSLDataset(Dataset):
                     instance_data['temp'] = instance_data['volume']
 
                     instance_data['volume'] = instance_data['volume_struct']
-                    result = self.instance_transforms[transform_name](**instance_data)
-                    instance_data['volume_struct'] = result['volume']
+                    for transform_name2 in self.instance_transforms[transform_name].keys():
+                        result = self.instance_transforms[transform_name][transform_name2](**instance_data)
+                        instance_data.update(result)
+                    instance_data['volume_struct'] = instance_data['volume']
 
                     instance_data['volume'] = instance_data['temp']
                     instance_data.pop('temp')
@@ -84,10 +87,10 @@ class SSLDataset(Dataset):
         return instance_data
     
     def sample_crop(self):
-        idx = np.random.randint(len(self.volumes))
-        volume = self.volumes[idx]
+        idx = np.random.randint(len(self.volumes_paths))
+        volume = Volume(type="zarr", path=self.volumes_paths[idx])
 
-        D, H, W = self.shapes[idx]
+        D, H, W = volume.shape()
 
         cd, ch, cw = self.crop_size
 
@@ -103,7 +106,7 @@ class SSLDataset(Dataset):
         volume, image_id = self.sample_crop()
 
         instance_data = {
-            'volume': volume,
+            'volume': volume[None],
             'image_id': image_id,
         }
         instance_data = self.preprocess_data(instance_data)

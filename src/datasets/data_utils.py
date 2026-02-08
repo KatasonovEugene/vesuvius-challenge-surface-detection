@@ -2,6 +2,7 @@ from itertools import repeat
 
 from hydra.utils import instantiate
 
+from src import transforms
 from src.datasets.collate import collate_fn
 from src.utils.init_utils import set_worker_seed
 
@@ -36,11 +37,18 @@ def move_batch_transforms_to_device(batch_transforms, device):
             tensor name.
         device (str): device to use for batch transforms.
     """
+
+    print(device)
+
     for transform_type in batch_transforms.keys():
         transforms = batch_transforms.get(transform_type)
         if transforms is not None:
             for transform_name in transforms.keys():
-                transforms[transform_name] = transforms[transform_name].to(device)
+                if isinstance(transforms[transform_name], dict):
+                    for transform_name2 in transforms[transform_name].keys():
+                        transforms[transform_name][transform_name2] = transforms[transform_name][transform_name2].to(device)
+                else:
+                    transforms[transform_name] = transforms[transform_name].to(device)
 
 
 def get_dataloaders(config, device):

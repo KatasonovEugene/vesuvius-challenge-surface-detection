@@ -10,6 +10,7 @@ class BaseLossDictWrapper(nn.Module):
         super().__init__()
         self.loss = loss
         self.name = name
+        self.names = [name, 'loss']
 
     def forward(self, **batch):
         loss = self.loss(**batch)

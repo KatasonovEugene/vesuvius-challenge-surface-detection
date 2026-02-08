@@ -41,7 +41,7 @@ class SSLnnUNetDetector(nn.Module):
         self,
         spatial_dims=3,
         in_channels=1,
-        out_channels=2,
+        out_channels=1,
         features_per_stage=[32, 64, 128, 256, 320, 320],
         kernel_size=[[3, 3, 3],[3, 3, 3],[3, 3, 3],[3, 3, 3],[3, 3, 3],[3, 3, 3]],
         strides=[[1, 1, 1],[2, 2, 2],[2, 2, 2],[2, 2, 2],[2, 2, 2],[2, 2, 2]],
@@ -69,19 +69,13 @@ class SSLnnUNetDetector(nn.Module):
         volume = volume.unsqueeze(1)
 
         if return_features:
+            volume = self.backbone.input_block(volume)
             for block in self.backbone.downsamples:
                 volume = block(volume)
             return volume
         else:
-            features = {}
-            def hook(module, inp, out):
-                features["enc"] = out
-
-            handle = self.backbone.downsamples[-1].register_forward_hook(hook)
             logits = self.backbone(volume)
-            handle.remove()
-
             if self.training:
-                return {'logits': logits[:, 0], "outputs": logits, "features": features["enc"]}
+                return {'logits': logits[:, 0], "outputs": logits}
             else:
-                return {'logits': logits, "outputs": None, "features": features["enc"]}
+                return {'logits': logits, "outputs": None}

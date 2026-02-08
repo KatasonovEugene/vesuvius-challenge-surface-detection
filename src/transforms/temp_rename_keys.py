@@ -15,7 +15,12 @@ class TempRenameKeys(nn.Module):
             transform_result = self.transforms[transform_name](**batch)
             batch.update(transform_result)
 
-        for new_key, old_key in reversed(list(self.key_changes.items())):
+        for old_key, new_key in reversed(self.key_changes.items()):
             batch[old_key] = batch.pop(new_key)
 
         return batch
+
+    # def to(self, *args, **kwargs):
+    #     for transform_name in self.transforms.keys():
+    #         self.transforms[transform_name] = self.transforms[transform_name].to(*args, **kwargs)
+    #     return self

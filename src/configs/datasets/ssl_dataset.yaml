@@ -1,4 +1,4 @@
 train:
   _target_: src.datasets.SSLDataset
   instance_transforms: ${instance_transforms.train}
-  crop_size: 160
+  crop_size: [160, 160, 160]

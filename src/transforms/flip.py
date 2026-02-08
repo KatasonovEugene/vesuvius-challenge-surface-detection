@@ -22,7 +22,7 @@ class RandFlip3D(nn.Module):
         self.prob = min(1.0, max(0.0, prob))
         self.spatial_axis = spatial_axis
 
-    def forward(self, volume, gt_mask, gt_skel, **batch):
+    def forward(self, volume, gt_mask=None, gt_skel=None, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
@@ -43,8 +43,10 @@ class RandFlip3D(nn.Module):
 
         flip = lambda x : torch.flip(x, dims=[self.spatial_axis + 1])
         volume = torch.where(apply_transform, flip(volume), volume)
-        gt_mask = torch.where(apply_transform, flip(gt_mask), gt_mask)
-        gt_skel = torch.where(apply_transform, flip(gt_skel), gt_skel)
+        if gt_mask is not None:
+            gt_mask = torch.where(apply_transform, flip(gt_mask), gt_mask)
+        if gt_skel is not None:
+            gt_skel = torch.where(apply_transform, flip(gt_skel), gt_skel)
 
         return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel}
 

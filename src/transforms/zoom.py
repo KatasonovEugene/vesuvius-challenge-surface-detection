@@ -25,7 +25,7 @@ class RandInstanceZoom3D(nn.Module):
         self.zoom_range_y = zoom_range_y
         self.zoom_range_z = zoom_range_z
 
-    def forward(self, volume, gt_mask, **batch):
+    def forward(self, volume, gt_mask=None, **batch):
         """
         Args:
             volume (numpy array): volume tensor.
@@ -40,7 +40,10 @@ class RandInstanceZoom3D(nn.Module):
 
         apply_transform = np.random.rand() < self.prob
         if not apply_transform:
-            return {'volume': volume, 'gt_mask': gt_mask}
+            if gt_mask is None:
+                return {'volume': volume}
+            else:
+                return {'volume': volume, 'gt_mask': gt_mask}
 
         zoom_x = np.random.uniform(self.zoom_range_x[0], self.zoom_range_x[1])
         zoom_y = np.random.uniform(self.zoom_range_y[0], self.zoom_range_y[1])
@@ -59,13 +62,17 @@ class RandInstanceZoom3D(nn.Module):
             cval=0.0
         )[None]
 
-        gt_mask = affine_transform(
-            gt_mask[0],
-            scaling_matrix,
-            offset=offset,
-            order=0,
-            mode='constant',
-            cval=2
-        )[None]
+        if gt_mask is not None:
+            gt_mask = affine_transform(
+                gt_mask[0],
+                scaling_matrix,
+                offset=offset,
+                order=0,
+                mode='constant',
+                cval=2
+            )[None]
 
-        return {'volume': volume, 'gt_mask': gt_mask}
+        if gt_mask is None:
+            return {'volume': volume}
+        else:
+            return {'volume': volume, 'gt_mask': gt_mask}
