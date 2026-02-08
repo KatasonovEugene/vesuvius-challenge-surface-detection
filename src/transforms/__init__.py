@@ -13,3 +13,4 @@ from src.transforms.contrast import RandomContrast3D
 from src.transforms.gamma import RandomGammaShift3D, RandomInstanceGammaShift3D
 from src.transforms.z_drop import ZDrop3D
 from src.transforms.zoom import RandInstanceZoom3D
+from src.transforms.vector_field import VectorField3D
