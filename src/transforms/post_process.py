@@ -12,6 +12,7 @@ class PostProcess(nn.Module):
         T_high=0.90,
         z_radius=1,
         xy_radius=0,
+        pre_closing_dust_min_size=0,
         dust_min_size=100,
         quantile_threshold=False
     ):
@@ -21,6 +22,7 @@ class PostProcess(nn.Module):
         self.T_high = T_high
         self.z_radius = z_radius
         self.xy_radius = xy_radius
+        self.pre_closing_dust_min_size = pre_closing_dust_min_size
         self.dust_min_size = dust_min_size
         self.quantile_threshold = quantile_threshold
 
@@ -54,6 +56,9 @@ class PostProcess(nn.Module):
             if not mask.any():
                 result[i] = torch.from_numpy(np.zeros_like(volume, dtype=np.uint8))
                 continue
+
+            if self.pre_closing_dust_min_size > 0:
+                mask = remove_small_objects(mask.astype(bool), min_size=self.pre_closing_dust_min_size)
 
             mask = anisotropic_closing(mask, self.z_radius, self.xy_radius)
 
