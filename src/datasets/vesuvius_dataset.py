@@ -16,10 +16,15 @@ class VesuviusDataset(BaseDataset):
         val_size=None,
         override=False,
         images_path=None,
+        pseudotarget_path=None,
+        mix_target_with_ps=True,
         *args,
         **kwargs,
     ):
         index_name = f"{part}_index.json"
+        if pseudotarget_path is not None:
+            index_name = "pseudotarget" + index_name
+
         self.is_kaggle_env = 'KAGGLE_URL_BASE' in os.environ
         if self.is_kaggle_env:
             self.index_path = ROOT_PATH / "data"
@@ -28,14 +33,22 @@ class VesuviusDataset(BaseDataset):
         self.index_path.mkdir(parents=True, exist_ok=True)
         self.index_path = self.index_path / index_name
 
-        assert part in ['train', 'val', 'test', 'full_train']
+        assert part in ['train', 'val', 'test']
         self.val_size = val_size
-        self.is_train = part in ['train', 'val']
+        self.is_train = part != 'test'
         if self.is_kaggle_env:
             self.data_path = Path('/kaggle/input/vesuvius-challenge-surface-detection')
         else:
             self.data_path = ROOT_PATH / 'data'
-        self.images_path = ROOT_PATH / images_path
+        if images_path is None:
+            self.images_path = None
+        else:
+            self.images_path = ROOT_PATH / images_path
+        if pseudotarget_path is None:
+            self.pseudotarget_path = None
+        else:
+            self.pseudotarget_path = ROOT_PATH / pseudotarget_path
+        self.mix_target_with_ps = mix_target_with_ps
 
         if self.index_path.exists() and not override:
             index = read_json(str(self.index_path))
@@ -49,10 +62,11 @@ class VesuviusDataset(BaseDataset):
         if self.is_train:
             images_path = self.data_path / 'train_images'
             target_path = self.data_path / 'train_labels'
+            if self.images_path is not None:
+                images_path = self.images_path
+            pseudotarget_path = self.pseudotarget_path
         else:
             images_path = self.data_path / 'test_images'
-        if not self.is_kaggle_env and self.images_path is not None:
-            images_path = self.images_path
 
         num_images = len([*images_path.iterdir()])
         if self.val_size is not None:
@@ -60,19 +74,22 @@ class VesuviusDataset(BaseDataset):
         else:
             num_val_images = num_images
         
-        print(f"Loading images from {str(image_path)}")
         for i, image_path in enumerate(images_path.iterdir()):
             item = {
                 'image_path': str(image_path),
             }
             if self.is_train:
                 item.update({
-                    'target_path': str(target_path / image_path.name)
+                    'target_path': str(target_path / image_path.name),
                 })
+                if pseudotarget_path is not None:
+                    item.update({
+                        'pseudotarget_path': str(pseudotarget_path / image_path.name),
+                    })
             is_item_in_dataset = (
                 (part == 'train' and i >= num_val_images) or
                 (part == 'val' and i < num_val_images) or
-                part not in ['train', 'val']
+                part != 'test'
             )
             if is_item_in_dataset:
                 index.append(item)
@@ -94,8 +111,14 @@ class VesuviusDataset(BaseDataset):
             'image_id': Path(image_path).stem,
         }
         if self.is_train:
-            target_path = item['target_path']
-            target = self.load_object(target_path, np.int8)
+            target = self.load_object(item['target_path'], np.int8)
+            if 'pseudotarget_path' in item:
+                pseudotarget = self.load_object(item['pseudotarget_path'], np.int8)
+                if self.mix_target_with_ps:
+                    mask = (target == 2)
+                    target[mask] = pseudotarget[mask]
+                else:
+                    target = pseudotarget
             instance_data.update({
                 'gt_mask': target,
                 'gt_skel': target,
