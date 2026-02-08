@@ -14,7 +14,13 @@ class BaseLoss(nn.Module):
         fp_weight=0.0,
         tversky_weight=0.0,
         eps=1e-7,
-        use_downsampling=False,
+        cld_calc_gt_skel=False,
+        cld_smooth_pred_skel=False,
+        cld_smooth_mask_skel=False,
+        cld_sigma=0.8,
+        cld_use_downsampling=False,
+        cld_use_hard_diff=False,
+        cld_iterations=1,
         iterations=5,
         tversky_alpha=0.7,
         tversky_beta=0.3,
@@ -24,14 +30,19 @@ class BaseLoss(nn.Module):
 
         self.ce_loss = CELoss(ignore_class_ids=2) 
         self.cld_loss = ClDiceLoss(
-            use_downsampling=use_downsampling,
-            iterations=iterations,
+            calc_gt_skel=cld_calc_gt_skel,
+            smooth_pred_skel=cld_smooth_pred_skel,
+            smooth_mask_skel=cld_smooth_mask_skel,
+            sigma=cld_sigma,
+            use_downsampling=cld_use_downsampling,
+            use_hard_diff=cld_use_hard_diff,
+            iterations=cld_iterations,
             eps=eps,
         )
         self.dice_loss = DiceLoss(
             num_classes=num_classes,
             ignore_class_ids=2,
-            eps=1e-7,
+            eps=eps,
         )
         self.skel_loss = SkelLoss(eps=eps)
         self.fp_loss = FPLoss(eps=eps)

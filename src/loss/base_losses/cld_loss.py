@@ -3,15 +3,25 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from src.transforms.skeletonize_diff import SkeletonizeDiff
+from src.transforms.skeletonize_diff_hard import SkeletonizeDiffHard
+from src.utils.transform_utils import gaussian_blur_batch_3d
 
 
 class ClDiceLoss(nn.Module):
-    def __init__(self, use_downsampling=False, iterations=5, eps=1e-7):
+    def __init__(self, calc_gt_skel=False, smooth_pred_skel=False, smooth_mask_skel=False, sigma=0.8, use_downsampling=False, use_hard_diff=False, iterations=1, eps=1e-7):
         super().__init__()
         self.eps = eps
+        self.calc_gt_skel = calc_gt_skel
         self.use_downsampling = use_downsampling
-        self.skeletonize = SkeletonizeDiff(iterations=iterations)
-
+        self.smooth_pred_skel = smooth_pred_skel
+        self.smooth_mask_skel = smooth_mask_skel
+        self.sigma = sigma
+        self.use_hard_diff = use_hard_diff
+        if use_hard_diff:
+            self.skeletonize_mask = SkeletonizeDiffHard(probabilistic=False, num_iter=iterations, simple_point_detection='Boolean')
+            self.skeletonize_pred = SkeletonizeDiffHard(probabilistic=True, num_iter=iterations, simple_point_detection='Boolean')
+        else:
+            self.skeletonize_mask = self.skeletonize_pred = SkeletonizeDiff(iterations=iterations)
 
     def downsample(self, volume, mode='avg'):
         if mode == 'max':
@@ -21,6 +31,22 @@ class ClDiceLoss(nn.Module):
         if mode == 'min':
             return -F.max_pool3d(-volume.unsqueeze(1), kernel_size=2, stride=2).squeeze(1)
         raise Exception("Unsupported downsampling mode")
+
+    def get_mask_skel(self, mask):
+        mask = (mask == 1).float()
+        batch_min = mask.view(mask.shape[0], -1).min(dim=1)[0].view(-1, 1, 1, 1)
+        batch_max = mask.view(mask.shape[0], -1).max(dim=1)[0].view(-1, 1, 1, 1)
+        mask = (mask - batch_min) / (batch_max - batch_min + self.eps)
+        if self.use_hard_diff:
+            return self.skeletonize_mask(mask.unsqueeze(1)).squeeze(1)
+        else:
+            return self.skeletonize_mask(mask)['pred_skel']
+
+    def get_pred_skel(self, volume):
+        if self.use_hard_diff:
+            return self.skeletonize_pred(volume.unsqueeze(1)).squeeze(1)
+        else:
+            return self.skeletonize_pred(volume)['pred_skel']
 
     def forward(self, probs, gt_mask, gt_skel, **batch):
         dims = (1, 2, 3) 
@@ -33,7 +59,14 @@ class ClDiceLoss(nn.Module):
             valid_mask = self.downsample(valid_mask.float(), 'min').float()
             gt_mask = self.downsample((gt_mask == 1).float(), 'max').to(torch.int8)
 
-        pred_skel = self.skeletonize(probs)['pred_skel']
+        if self.calc_gt_skel:
+            gt_skel = self.get_mask_skel(gt_mask)
+        pred_skel = self.get_pred_skel(probs)
+
+        if self.smooth_mask_skel:
+            gt_skel = gaussian_blur_batch_3d(gt_skel.float(), sigma=self.sigma)
+        if self.smooth_pred_skel:
+            pred_skel = gaussian_blur_batch_3d(pred_skel.float(), sigma=self.sigma)
 
         sens_intersect = (gt_skel * probs * valid_mask).sum(dim=dims)
         gt_skel_sum = (gt_skel * valid_mask).sum(dim=dims)

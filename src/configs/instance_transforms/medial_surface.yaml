@@ -6,8 +6,8 @@ train:
     prefer_skeleton: False
   skeletonize:
     _target_: src.transforms.MedialSurface # skeletonize must be after crop
-    pseudo3d: True
-    do_tube: True
+    pseudo3d: False
+    do_tube: False
     dilation_iterations: 1
   to_torch:
     _target_: src.transforms.ToTorch # to_torch must be after skeletonize
@@ -34,8 +34,8 @@ train:
 inference:
   skeletonize:
     _target_: src.transforms.MedialSurface # skeletonize must be after crop
-    pseudo3d: True
-    do_tube: True
+    pseudo3d: False
+    do_tube: False
     dilation_iterations: 1
   to_torch:
     _target_: src.transforms.ToTorch # to_torch must be after skeletonize

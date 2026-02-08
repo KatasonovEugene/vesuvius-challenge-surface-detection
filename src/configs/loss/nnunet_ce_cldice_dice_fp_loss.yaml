@@ -3,10 +3,15 @@ base_loss:
   _target_: src.loss.BaseLoss
   num_classes: 2
   ce_weight: 1.0
-  cld_weight: 0.4
+  cld_weight: 0.5
   dice_weight: 1.0
   fp_weight: 0.3
   eps: 1e-7
-  use_downsampling: False
-  iterations: 5
+  cld_calc_gt_skel: False
+  cld_smooth_pred_skel: True
+  cld_smooth_mask_skel: True
+  cld_sigma: 0.8
+  cld_use_downsampling: False
+  cld_use_hard_diff: True
+  cld_iterations: 1
 ds_weights: null
