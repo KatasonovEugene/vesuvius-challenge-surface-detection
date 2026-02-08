@@ -1,7 +1,7 @@
 defaults:
   - model: ssl_nnunet
   - writer: wandb_ssl
-  - metrics: empty
+  - metrics: ssl
   - datasets: ssl_dataset
   - dataloader: default
   - batch_transforms: ssl
