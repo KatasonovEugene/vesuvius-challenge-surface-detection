@@ -15,7 +15,7 @@ class VesuviusDataset(BaseDataset):
         part='train',
         val_size=None,
         override=False,
-        load_in_memory=False,
+        images_path=None,
         *args,
         **kwargs,
     ):
@@ -28,13 +28,14 @@ class VesuviusDataset(BaseDataset):
         self.index_path.mkdir(parents=True, exist_ok=True)
         self.index_path = self.index_path / index_name
 
-        assert part in ['train', 'val', 'test']
+        assert part in ['train', 'val', 'test', 'full_train']
         self.val_size = val_size
-        self.is_train = part != 'test'
+        self.is_train = part in ['train', 'val']
         if self.is_kaggle_env:
             self.data_path = Path('/kaggle/input/vesuvius-challenge-surface-detection')
         else:
             self.data_path = ROOT_PATH / 'data'
+        self.images_path = ROOT_PATH / images_path
 
         if self.index_path.exists() and not override:
             index = read_json(str(self.index_path))
@@ -50,12 +51,16 @@ class VesuviusDataset(BaseDataset):
             target_path = self.data_path / 'train_labels'
         else:
             images_path = self.data_path / 'test_images'
+        if not self.is_kaggle_env and self.images_path is not None:
+            images_path = self.images_path
+
         num_images = len([*images_path.iterdir()])
         if self.val_size is not None:
             num_val_images = int(self.val_size * num_images)
         else:
             num_val_images = num_images
-
+        
+        print(f"Loading images from {str(image_path)}")
         for i, image_path in enumerate(images_path.iterdir()):
             item = {
                 'image_path': str(image_path),
@@ -67,7 +72,7 @@ class VesuviusDataset(BaseDataset):
             is_item_in_dataset = (
                 (part == 'train' and i >= num_val_images) or
                 (part == 'val' and i < num_val_images) or
-                part == 'test'
+                part not in ['train', 'val']
             )
             if is_item_in_dataset:
                 index.append(item)

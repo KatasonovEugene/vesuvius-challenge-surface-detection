@@ -1,0 +1,5 @@
+full_train:
+  _target_: src.datasets.VesuviusDataset
+  part: 'test'
+  images_path: 'data/train_images'
+  instance_transforms: ${instance_transforms.inference}
