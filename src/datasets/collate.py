@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 
 
 def collate_fn(dataset_items: list[dict]):
@@ -20,4 +21,7 @@ def collate_fn(dataset_items: list[dict]):
     if 'gt_mask' in dataset_items[0]:
         result_batch['gt_mask'] = torch.cat([elem['gt_mask'] for elem in dataset_items])
         result_batch['gt_skel'] = torch.cat([elem['gt_skel'] for elem in dataset_items])
+    if 'vector' in dataset_items[0]:
+        result_batch['vector'] = torch.cat([elem['vector'] for elem in dataset_items])
+
     return result_batch

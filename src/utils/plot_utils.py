@@ -13,6 +13,7 @@ def view3d(volume, gt_mask, gt_skel, outputs=None, sample_idx=0, **batch):
     volume = volume.cpu().numpy()
     gt_mask = gt_mask.cpu().numpy()
     gt_skel = gt_skel.cpu().numpy()
+    vector = vector.cpu().numpy()
     if outputs is not None:
         outputs = outputs.cpu().numpy()
 
@@ -39,6 +40,7 @@ def plot_sample(volume, gt_mask, gt_skel, outputs=None, sample_idx=0, max_slices
 
     img = np.squeeze(volume[sample_idx])  # (D, H, W)
     mask = np.squeeze(gt_mask[sample_idx])  # (D, H, W)
+    vector = np.squeeze(vector[sample_idx])
     skel_mask = np.squeeze(gt_skel[sample_idx])  # (D, H, W)
     output_mask = None
     if outputs is not None:
@@ -52,9 +54,11 @@ def plot_sample(volume, gt_mask, gt_skel, outputs=None, sample_idx=0, max_slices
     n_slices = len(slices)
     
     if output_mask is not None:
-        fig, axes = plt.subplots(4, n_slices, figsize=(4*n_slices, 8))
+        fig, axes = plt.subplots(5, n_slices, figsize=(5*n_slices, 10))
     else:
-        fig, axes = plt.subplots(3, n_slices, figsize=(3*n_slices, 6))
+        fig, axes = plt.subplots(4, n_slices, figsize=(4*n_slices, 8))
+
+    step_arrow = 4
 
     for i, s in enumerate(slices):
         axes[0, i].imshow(img[s], cmap='gray')
@@ -68,6 +72,18 @@ def plot_sample(volume, gt_mask, gt_skel, outputs=None, sample_idx=0, max_slices
         axes[2, i].imshow(skel_mask[s], cmap='gray')
         axes[2, i].set_title(f"Skeleton Mask {s}")
         axes[2, i].axis('off')
+
+        H, W = img[s].shape
+        Y, X = np.mgrid[0:H, 0:W]
+        axes[3, i].quiver(
+            X[::step_arrow, ::step_arrow],
+            Y[::step_arrow, ::step_arrow],
+            vector[2, s, ::step_arrow, ::step_arrow],
+            vector[1, s, ::step_arrow, ::step_arrow],
+            color='red', scale=10, headwidth=2, headlength=4
+        )
+        axes[3, i].set_ylim(H, 0)
+        axes[3, i].set_aspect('equal')
 
         if output_mask is not None:
             axes[3, i].imshow(output_mask[s], cmap='gray')
@@ -138,6 +154,6 @@ def plot_results(gt_mask, gt_skel, outputs_probs, outputs_post_processed, sample
     plt.close()
 
 
-def plot_batch(volume, gt_mask, gt_skel, outputs=None, max_slices=16, name="sample_plot", **batch):
+def plot_batch(volume, gt_mask, gt_skel, vector=None, outputs=None, max_slices=16, name="sample_plot", **batch):
     for i in range(volume.shape[0]):
-        plot_sample(volume, gt_mask, gt_skel, outputs=outputs, sample_idx=i, max_slices=max_slices, name=name)
+        plot_sample(volume, gt_mask, gt_skel, vector=vector, outputs=outputs, sample_idx=i, max_slices=max_slices, name=name)
