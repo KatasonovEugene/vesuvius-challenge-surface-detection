@@ -65,20 +65,23 @@ class SSLnnUNetDetector(nn.Module):
     def get_encoder_channels(self):
         return self.features_per_stage[-1]
 
-
-    def forward(self, volume, **batch):
+    def forward(self, volume, return_features=False, **batch):
         volume = volume.unsqueeze(1)
 
-        features = {}
-
-        def hook(module, inp, out):
-            features["enc"] = out
-
-        handle = self.backbone.downsamples[-1].register_forward_hook(hook)
-        logits = self.backbone(volume)
-        handle.remove()
-
-        if self.training:
-            return {'logits': logits[:, 0], "outputs": logits, "features": features["enc"]}
+        if return_features:
+            for block in self.backbone.downsamples:
+                volume = block(volume)
+            return volume
         else:
-            return {'logits': logits, "outputs": None, "features": features["enc"]}
+            features = {}
+            def hook(module, inp, out):
+                features["enc"] = out
+
+            handle = self.backbone.downsamples[-1].register_forward_hook(hook)
+            logits = self.backbone(volume)
+            handle.remove()
+
+            if self.training:
+                return {'logits': logits[:, 0], "outputs": logits, "features": features["enc"]}
+            else:
+                return {'logits': logits, "outputs": None, "features": features["enc"]}

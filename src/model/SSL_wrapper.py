@@ -20,8 +20,8 @@ class NNUnetMAEStructSemantic(nn.Module):
 
     def forward(self, volume_struct, volume_sem1, volume_sem2, **batch):
         struct = self.model(volume_struct)
-        sem1 = self.model(volume_sem1)['features']
-        sem2 = self.model(volume_sem2)['features']
+        sem1 = self.model(volume_sem1, return_features=True)
+        sem2 = self.model(volume_sem2, return_features=True)
 
         sem1 = sem1.mean(dim=(2, 3, 4))
         sem2 = sem2.mean(dim=(2, 3, 4))
