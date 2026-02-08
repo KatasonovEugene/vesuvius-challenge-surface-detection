@@ -8,6 +8,8 @@ __pycache__/
 *.pt
 sync_wandb_logs.sh
 scripts/copy_preds.py
+sync_logs.sh
+logs
 
 # C extensions
 *.so
