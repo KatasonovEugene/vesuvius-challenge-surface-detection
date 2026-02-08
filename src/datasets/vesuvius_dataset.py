@@ -114,11 +114,17 @@ class VesuviusDataset(BaseDataset):
             target = self.load_object(item['target_path'], np.int8)
             if 'pseudotarget_path' in item:
                 pseudotarget = self.load_object(item['pseudotarget_path'], np.int8)
+                old_target = target.copy()
+
                 if self.mix_target_with_ps:
                     mask = (target == 2)
                     target[mask] = pseudotarget[mask]
+                    instance_data.update({
+                        'old_gt_mask': old_target,
+                    })
                 else:
                     target = pseudotarget
+
             instance_data.update({
                 'gt_mask': target,
                 'gt_skel': target,

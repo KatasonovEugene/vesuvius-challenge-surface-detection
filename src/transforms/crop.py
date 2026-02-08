@@ -65,13 +65,14 @@ class RandSpatialCrop3D(nn.Module):
 
 
 class HighSumCrop3D(nn.Module):
-    def __init__(self, size, num_candidates=10, prefer_skeleton=True):
+    def __init__(self, size, prob=1.0, num_candidates=10, prefer_skeleton=False):
         super().__init__()
+        self.prob = float(prob)
         self.size = tuple(size)
         self.num_candidates = int(num_candidates)
         self.prefer_skeleton = bool(prefer_skeleton)
 
-    def forward(self, volume, gt_mask, gt_skel=None, **batch):
+    def forward(self, volume, gt_mask, gt_skel=None, old_gt_mask=None, **batch):
         if volume.ndim != 4:
             raise RuntimeError(f'HighSumCrop3D: input shape was not expected; input shape: {volume.shape}; expected shape: [B, D, H, W]')
 
@@ -82,18 +83,27 @@ class HighSumCrop3D(nn.Module):
         out_msk = np.empty((B, sd, sh, sw), dtype=gt_mask.dtype)
         out_skel = np.empty((B, sd, sh, sw), dtype=gt_skel.dtype) if gt_skel is not None else None
 
+        is_high_sum_crop = np.random.rand(1) <= self.prob
+        if is_high_sum_crop:
+            num_candidates = self.num_candidates
+        else:
+            num_candidates = 1
+
         for b in range(B):
             valid = (gt_mask[b] != 2)
 
             if gt_skel is not None and self.prefer_skeleton:
                 target = (gt_skel[b] > 0) & valid
             else:
-                target = (gt_mask[b] == 1) & valid
+                if old_gt_mask is not None:
+                    target = (old_gt_mask[b] == 1) & valid
+                else:
+                    target = (gt_mask[b] == 1) & valid
 
             best = None
             best_score = -1
 
-            for _ in range(self.num_candidates):
+            for _ in range(num_candidates):
                 bz = np.random.randint(0, D - sd + 1)
                 by = np.random.randint(0, H - sh + 1)
                 bx = np.random.randint(0, W - sw + 1)
