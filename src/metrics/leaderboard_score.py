@@ -1,4 +1,5 @@
 from ext.vesuvius_metric_resources.topological_metrics_kaggle.src.topometrics import compute_leaderboard_score
+from ext.vesuvius_metric_resources.topological_metrics_kaggle.src.topometrics.toposcore import TopoScore
 import torch
 import numpy as np
 from src.metrics.base_metric import BaseMetric
@@ -39,6 +40,7 @@ class LeaderboardScore(BaseMetric):
         voi_score_total = 0.0
         voi_split_total = 0.0
         voi_merge_total = 0.0
+        topo_reports = []
 
         outputs = outputs.to(torch.uint8)
         gt_mask = gt_mask.to(torch.uint8)
@@ -69,18 +71,13 @@ class LeaderboardScore(BaseMetric):
             del pr, gt
             gc.collect()
 
-            # print("Leaderboard score:", result.score)
-            # print("Topo score:", result.topo.toposcore)
-            # print("Surface Dice:", result.surface_dice)
-            # print("VOI score:", result.voi.voi_score)
-            # print("VOI split/merge:", result.voi.voi_split, result.voi.voi_merge)
-
             lb_score_total += result.score
             topo_score_total += result.topo.toposcore
             surface_dice_total += result.surface_dice
             voi_score_total += result.voi.voi_score
             voi_split_total += result.voi.voi_split
             voi_merge_total += result.voi.voi_merge
+            topo_reports.append(result.topo)
 
         lb_score_average = lb_score_total / outputs.shape[0]
         topo_score_average = topo_score_total / outputs.shape[0]
@@ -88,6 +85,7 @@ class LeaderboardScore(BaseMetric):
         voi_score_average = voi_score_total / outputs.shape[0]
         voi_split_average = voi_split_total / outputs.shape[0]
         voi_merge_average = voi_merge_total / outputs.shape[0]
+        topo_aggregate = TopoScore.aggregate_reports(topo_reports, dims=(0, 1, 2), weights=None)
 
         return {
             'leaderboard_score': lb_score_average,
@@ -95,9 +93,33 @@ class LeaderboardScore(BaseMetric):
             'surface_dice': surface_dice_average,
             'voi_score': voi_score_average,
             'voi_split': voi_split_average,
-            'voi_merge': voi_merge_average
+            'voi_merge': voi_merge_average,
+            'betti_number_0_gt': topo_aggregate.counts_by_dim[0][2],
+            'betti_number_0_pred': topo_aggregate.counts_by_dim[0][1],
+            'betti_number_0_matched': topo_aggregate.counts_by_dim[0][0],
+            'betti_number_1_gt': topo_aggregate.counts_by_dim[1][2],
+            'betti_number_1_pred': topo_aggregate.counts_by_dim[1][1],
+            'betti_number_1_matched': topo_aggregate.counts_by_dim[1][0],
+            'betti_number_2_gt': topo_aggregate.counts_by_dim[2][2],
+            'betti_number_2_pred': topo_aggregate.counts_by_dim[2][1],
+            'betti_number_2_matched': topo_aggregate.counts_by_dim[2][0],
         }
 
-
     def getKeys(self):
-        return ['leaderboard_score', 'topo_score', 'surface_dice', 'voi_score', 'voi_split', 'voi_merge']
+        return [
+            'leaderboard_score',
+            'topo_score',
+            'surface_dice',
+            'voi_score',
+            'voi_split',
+            'voi_merge',
+            'betti_number_0_gt',
+            'betti_number_0_pred',
+            'betti_number_0_matched',
+            'betti_number_1_gt',
+            'betti_number_1_pred',
+            'betti_number_1_matched',
+            'betti_number_2_gt',
+            'betti_number_2_pred',
+            'betti_number_2_matched'
+        ]
