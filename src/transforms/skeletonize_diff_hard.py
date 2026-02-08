@@ -31,7 +31,7 @@ class SkeletonizeDiffHard(torch.nn.Module):
     def __init__(self, probabilistic=True, beta=0.33, tau=1.0, simple_point_detection='Boolean', num_iter=5):
 
         super(SkeletonizeDiffHard, self).__init__()
-        
+
         self.probabilistic = probabilistic
         self.tau = tau
         self.beta = beta

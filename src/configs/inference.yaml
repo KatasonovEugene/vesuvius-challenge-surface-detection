@@ -1,19 +1,17 @@
 defaults:
-  - model: ensemble
-  - metrics: empty
-  - datasets: test
-  - dataloader: default
+  - model: nnunet
+  - metrics: cldice_temp
+  - datasets: default
+  - dataloader: local
   - batch_transforms: main
   - instance_transforms: main
-  - postprocess_transforms: main
+  - postprocess_transforms: empty
   - tta_transforms: empty
   - _self_
 inferencer:
-  device_tensors: ["volume"]
+  device_tensors: ["volume", "gt_mask", "gt_skel"]
   device: auto
   seed: 1
   use_amp: False
   amp_dtype: "bfloat16"
-  from_pretrained:
-    -  "models/nnunet-elastic.pth"
-    -  "models/elastic.pth"
+  from_pretrained: "models/nnunet-elastic.pth"

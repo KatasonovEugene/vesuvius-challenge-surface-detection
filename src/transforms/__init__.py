@@ -7,7 +7,7 @@ from src.transforms.crop import RandSpatialCrop3D, HighSumCrop3D
 from src.transforms.post_process import PostProcess
 from src.transforms.smart_post_process import SmartPostProcess
 from src.transforms.cutout import Cutout3D
-from src.transforms.skeletonize import Skeletonize, MedialSurface
+from src.transforms.skeletonize import Skeletonize, MedialSurface, SmartSkeletonize, DeleteSmallComponents
 from src.transforms.to_torch import ToTorch
 from src.transforms.elastic_deformation import ElasticDeformation
 from src.transforms.contrast import RandomContrast3D

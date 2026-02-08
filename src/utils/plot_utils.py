@@ -1,7 +1,7 @@
 import matplotlib
 # matplotlib.use('Agg')
 
-# import napari
+import napari
 import matplotlib.pyplot as plt
 import numpy as np
 import os

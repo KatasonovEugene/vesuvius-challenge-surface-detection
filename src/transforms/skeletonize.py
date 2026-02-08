@@ -1,11 +1,17 @@
 from torch import nn
 import numpy as np
-from skimage.morphology import skeletonize, dilation
-from scipy.ndimage import binary_dilation
+from skimage.morphology import skeletonize, dilation, remove_small_objects, medial_axis
+from skimage.filters import gaussian
+from scipy.ndimage import distance_transform_edt
+from scipy.ndimage import binary_dilation, maximum_filter 
+import torch.nn.functional as F
+import torch
+
+from src.transforms.skeletonize_diff_hard import SkeletonizeDiffHard
 
 
 class Skeletonize(nn.Module):
-    def __init__(self, dilation_iterations=1):
+    def __init__(self, dilation_iterations=0):
         super().__init__()
         self.dilation_iterations = dilation_iterations
 
@@ -37,6 +43,9 @@ class MedialSurface(nn.Module):
 
         gt_skel = gt_skel.squeeze(axis=0) # [D, H, W]
         mask = (gt_skel == 1)
+
+        # mask = gaussian(mask, sigma=1) > 0.5
+
         skel_all = np.zeros_like(mask, dtype=bool)
 
         if not np.sum(mask) == 0:
@@ -60,3 +69,55 @@ class MedialSurface(nn.Module):
 
         skel_all = skel_all[None]
         return {"gt_skel": skel_all}
+
+class SmartSkeletonize(nn.Module):
+    def __init__(self, min_radius=2, min_size=50):
+        super().__init__()
+        self.min_radius = min_radius
+        self.min_size = min_size
+
+    def forward(self, gt_skel=None, **batch):
+        if gt_skel is None:
+            return {}
+
+        gt_skel = torch.from_numpy(gt_skel)
+        skeletonizer = SkeletonizeDiffHard(probabilistic=False, num_iter=1, simple_point_detection='EulerCharacteristic')
+        gt_mask_normalized = (gt_skel == 1).float().unsqueeze(1)
+        gt_skel = (skeletonizer(gt_mask_normalized) > 0.5)
+        gt_skel = gt_skel.squeeze(1)
+        gt_skel = gt_skel.detach().cpu().numpy()
+
+        return {'gt_skel': gt_skel}
+
+class BadSkeletonize(nn.Module):
+    def __init__(self, min_radius=0):
+        super().__init__()
+        self.min_radius = min_radius
+
+    def forward(self, gt_skel=None, **batch):
+        if gt_skel is None:
+            return {}
+        gt_skel = gt_skel.squeeze(axis=0)
+        mask = (gt_skel == 1)
+
+        dist = distance_transform_edt(mask)
+        is_max = (dist == maximum_filter(dist, size=3, mode='constant', cval=0))
+
+        skel = is_max & (mask > 0)
+
+        skel = skel & (dist >= self.min_radius)
+
+        return {'gt_skel': skel[None]}
+
+
+class DeleteSmallComponents(nn.Module):
+    def __init__(self, min_size=50):
+        super().__init__()
+        self.min_size = min_size
+
+    def forward(self, gt_skel=None, **batch):
+        if gt_skel is None:
+            return {}
+        gt_skel = gt_skel.squeeze(axis=0)
+        skel = remove_small_objects(gt_skel, min_size=self.min_size)
+        return {'gt_skel': skel[None]}

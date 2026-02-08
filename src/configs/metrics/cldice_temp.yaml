@@ -1,0 +1,19 @@
+device: "auto"
+train:
+  - _target_: src.metrics.cldice_loss_temp.ClDiceLoss
+    calc_gt_skel: False
+    smooth_pred_skel: True
+    smooth_mask_skel: True
+    sigma: 0.8
+    use_downsampling: False
+    use_hard_diff: True
+    iterations: 1
+inference:
+  - _target_: src.metrics.cldice_loss_temp.ClDiceLoss
+    calc_gt_skel: False
+    smooth_pred_skel: True
+    smooth_mask_skel: True
+    sigma: 0.8
+    use_downsampling: False
+    use_hard_diff: True
+    iterations: 1
