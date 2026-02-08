@@ -7,4 +7,4 @@ class MSELoss(nn.Module):
         self.eps = eps
 
     def forward(self, struct, gt_struct, masked, **batch):
-        return ((struct - gt_struct)**2)[masked].mean()
+        return ((struct - gt_struct)**2 * masked).sum() / (masked.sum() + self.eps)

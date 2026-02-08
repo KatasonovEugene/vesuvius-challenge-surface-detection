@@ -3,13 +3,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from src.transforms.skeletonize_diff import SkeletonizeDiff
+from src.utils.transform_utils import gaussian_blur_batch_3d
 
 
-class SLLSkelLoss(nn.Module):
-    def __init__(self, use_downsampling=False, iterations=5, eps=1e-7):
+class SLLclDiceLoss(nn.Module):
+    def __init__(self, use_downsampling=False, use_blur=False, sigma=1.0, iterations=5, eps=1e-7):
         super().__init__()
         self.eps = eps
         self.use_downsampling = use_downsampling
+        self.use_blur = use_blur
+        self.sigma = sigma
         self.skeletonize = SkeletonizeDiff(iterations=iterations)
 
     def downsample(self, volume, mode='avg'):
@@ -33,10 +36,19 @@ class SLLSkelLoss(nn.Module):
         struct_skel = self.skeletonize(struct)['pred_skel']
         gt_struct_skel = self.skeletonize(gt_struct)['pred_skel']
 
-        intersection = (struct_skel * gt_struct_skel).sum(dim=dims)
-        skel_sum = (struct_skel + gt_struct_skel).sum(dim=dims)
-        has_skeleton = (skel_sum > 0).float()
-        recall = 2 * (intersection + self.eps) / (skel_sum + self.eps)
-        skel_loss = torch.mean((1.0 - recall) * has_skeleton)
+        if self.use_blur:
+            struct_skel = gaussian_blur_batch_3d(struct_skel, sigma=self.sigma)
+            gt_struct_skel = gaussian_blur_batch_3d(gt_struct_skel, sigma=self.sigma)
 
-        return skel_loss
+        sens_intersect = (gt_struct_skel * struct).sum(dim=dims)
+        gt_skel_sum = (gt_struct_skel).sum(dim=dims)
+        Tsens = (sens_intersect + self.eps) / (gt_skel_sum + self.eps)
+
+        prec_intersect = (struct_skel * gt_struct).sum(dim=dims)
+        pred_skel_sum = (struct_skel).sum(dim=dims)
+        Tprec = (prec_intersect + self.eps) / (pred_skel_sum + self.eps)
+
+        clDice_score = (2 * Tprec * Tsens + self.eps) / (Tprec + Tsens + self.eps)
+        cldice_loss = 1.0 - clDice_score.mean()
+
+        return cldice_loss

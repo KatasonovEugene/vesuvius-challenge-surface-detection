@@ -41,6 +41,6 @@ class SSLnnUnetLoss(nn.Module):
                 for key in result_i:
                     accum_results[key] += result_i[key] * weight
 
-        assert all(['loss' in name for name in accum_results])
+        assert all(['loss' in name for name in accum_results if name != 'neg_sim'])
 
         return accum_results

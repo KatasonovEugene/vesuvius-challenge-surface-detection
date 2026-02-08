@@ -5,5 +5,6 @@ from src.loss.base_losses.fp_loss import FPLoss
 from src.loss.base_losses.skel_loss import SkelLoss
 from src.loss.base_losses.mse_loss import MSELoss
 from src.loss.base_losses.info_nce_loss import InfoNCELoss
-from src.loss.base_losses.sll_skel_loss import SLLSkelLoss
+from src.loss.base_losses.sll_cldice_loss import SLLclDiceLoss
 from src.loss.base_losses.tv_loss import TVLoss
+from src.loss.base_losses.ssim_loss import SSIMLoss

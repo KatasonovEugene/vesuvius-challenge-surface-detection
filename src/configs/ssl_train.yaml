@@ -14,7 +14,7 @@ defaults:
 trainer:
   log_step: 10
   n_epochs: 100
-  epoch_len: 1000
+  epoch_len: 100
   device_tensors: ["volume", "volume_struct", "volume_sem1", "volume_sem2"]
   use_amp: False
   amp_dtype: "bfloat16"
@@ -31,3 +31,4 @@ trainer:
   log_batch_to_writer: False
   view_3d_online: False
   grad_accum_steps: 8
+  max_grad_norm: 1.0
