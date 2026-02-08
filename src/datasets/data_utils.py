@@ -82,7 +82,7 @@ def get_dataloaders(config, device):
                 batch_size=1,
             )
         assert kwargs['batch_size'] <= len(dataset), (
-            f"The batch size ({config.dataloader.batch_size}) cannot "
+            f"The batch size ({kwargs['batch_size']}) cannot "
             f"be larger than the dataset length ({len(dataset)})"
         )
 

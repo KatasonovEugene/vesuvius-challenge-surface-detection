@@ -89,7 +89,7 @@ class VesuviusDataset(BaseDataset):
             is_item_in_dataset = (
                 (part == 'train' and i >= num_val_images) or
                 (part == 'val' and i < num_val_images) or
-                part != 'test'
+                part == 'test'
             )
             if is_item_in_dataset:
                 index.append(item)
