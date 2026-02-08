@@ -20,7 +20,7 @@ class TempRenameKeys(nn.Module):
 
         return batch
 
-    # def to(self, *args, **kwargs):
-    #     for transform_name in self.transforms.keys():
-    #         self.transforms[transform_name] = self.transforms[transform_name].to(*args, **kwargs)
-    #     return self
+    def to(self, *args, **kwargs):
+        for transform_name in self.transforms.keys():
+            self.transforms[transform_name] = self.transforms[transform_name].to(*args, **kwargs)
+        return self

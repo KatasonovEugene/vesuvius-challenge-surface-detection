@@ -22,8 +22,8 @@ class MAEStructContrastiveLoss(nn.Module):
         self.names.append("loss")
 
     def forward(self, logits, sem1, sem2, **batch):
-        loss_struct = self.loss_struct(struct=logits, gt_struct=batch['volume'])
-        loss_contrastive = self.loss_contrastive(sem1=sem1, sem2=sem2)
+        loss_struct = self.loss_struct(struct=logits[:, 0], gt_struct=batch['volume'], masked=batch['cutout_mask'], **batch)
+        loss_contrastive = self.loss_contrastive(sem1=sem1, sem2=sem2, **batch)
 
         result = {}
         result.update(loss_struct)

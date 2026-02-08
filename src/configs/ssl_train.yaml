@@ -30,4 +30,4 @@ trainer:
   log_batch_plots: False
   log_batch_to_writer: False
   view_3d_online: False
-  grad_accum_steps: 4
+  grad_accum_steps: 8
