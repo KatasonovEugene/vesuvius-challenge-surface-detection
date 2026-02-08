@@ -86,22 +86,17 @@ class Trainer(BaseTrainer):
 
     def _log_batch(self, batch_idx, batch, mode="train"):
         if mode != "train":
-            mask = batch['gt_mask'][0]
-            indices = np.arange(mask.shape[0], step=10)
+            indices = np.arange(31, 160, step=32)
             logits = batch['logits'][0]
             prob = torch.softmax(logits, dim=0)[1]
             pred = logits.argmax(dim=0)
-            mask = self.convert_image(mask)
             pred = self.convert_image(pred)
             prob = self.convert_heatmap(prob)
             slices = {
-                "mask_axial_z": [mask[i, :, :] for i in indices],
                 "pred_axial_z": [pred[i, :, :] for i in indices],
                 "prob_axial_z": [prob[i, :, :] for i in indices],
-                "mask_coronal_y": [mask[:, i, :] for i in indices],
                 "pred_coronal_y": [pred[:, i, :] for i in indices],
                 "prob_coronal_y": [prob[:, i, :] for i in indices],
-                "mask_sagittal_x": [mask[:, :, i] for i in indices],
                 "pred_sagittal_x": [pred[:, :, i] for i in indices],
                 "prob_sagittal_x": [prob[:, :, i] for i in indices],
             }
