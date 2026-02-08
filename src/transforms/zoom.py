@@ -25,21 +25,25 @@ class RandInstanceZoom3D(nn.Module):
         self.zoom_range_y = zoom_range_y
         self.zoom_range_z = zoom_range_z
 
-    def forward(self, volume, gt_mask, **batch):
+    def forward(self, volume, gt_mask, gt_sdf=None, **batch):
         """
         Args:
             volume (numpy array): volume tensor.
             gt_mask (numpy array): ground truth mask tensor.
+            gt_sdf (numpy array): ground truth sdf tensor.
         Returns:
             volume (numpy array): randomly rotated volume tensor.
             gt_mask (numpy array): randomly rotated ground truth mask tensor.
+            gt_sdf (numpy array): randomly rotated ground truth sdf tensor.
         """
-
+            
         if volume.ndim != 4 or volume.shape[0] != 1:
             raise RuntimeError(f'RandZoom3D: input shape was not expected; input shape: {volume.shape}; expected shape: [1, D, H, W]')
 
         apply_transform = np.random.rand() < self.prob
         if not apply_transform:
+            if gt_sdf is not None:
+                return {'volume': volume, 'gt_mask': gt_mask, 'gt_sdf': gt_sdf}
             return {'volume': volume, 'gt_mask': gt_mask}
 
         zoom_x = np.random.uniform(self.zoom_range_x[0], self.zoom_range_x[1])
@@ -68,4 +72,16 @@ class RandInstanceZoom3D(nn.Module):
             cval=2
         )[None]
 
+        if gt_sdf is not None:
+            gt_sdf = affine_transform(
+                gt_sdf[0],
+                scaling_matrix,
+                offset=offset,
+                order=1,
+                mode='constant',
+                cval=gt_sdf.max()
+            )[None]
+
+        if gt_sdf is not None:
+            return {'volume': volume, 'gt_mask': gt_mask, 'gt_sdf': gt_sdf}
         return {'volume': volume, 'gt_mask': gt_mask}

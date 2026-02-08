@@ -45,16 +45,18 @@ class ElasticDeformation(nn.Module):
 
         return volume.squeeze(1)
 
-    def forward(self, volume, gt_mask, gt_skel, **batch):
+    def forward(self, volume, gt_mask, gt_skel, gt_sdf=None, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
             gt_mask (Tensor): ground truth mask tensor.
             gt_skel (Tensor): ground truth skeleton tensor.
+            gt_sdf (Tensor): ground truth signed distance function tensor.
         Returns:
             volume (Tensor): deformated volume tensor.
             gt_mask (Tensor): deformated ground truth mask tensor.
             gt_skel (Tensor): deformated ground truth skeleton tensor.
+            gt_sdf (Tensor): deformated ground truth signed distance function tensor.
         """
 
         if volume.dim() != 4:
@@ -89,6 +91,8 @@ class ElasticDeformation(nn.Module):
         volume_changed = F.grid_sample(volume.unsqueeze(1), grid, mode="bilinear", padding_mode="border", align_corners=True).squeeze(1)
         gt_mask_changed = F.grid_sample(gt_mask.unsqueeze(1).float(), grid, mode="nearest", padding_mode="border", align_corners=True).squeeze(1)
         gt_skel_changed = F.grid_sample(gt_skel.unsqueeze(1).float(), grid, mode="nearest", padding_mode="border", align_corners=True).squeeze(1)
+        if gt_sdf is not None:
+            gt_sdf_changed = F.grid_sample(gt_sdf.unsqueeze(1).float(), grid, mode="bilinear", padding_mode="border", align_corners=True).squeeze(1)
 
         gt_mask_changed = gt_mask_changed.round().to(dtype=gt_mask.dtype)
         gt_skel_changed = gt_skel_changed.round().to(dtype=gt_skel.dtype)
@@ -96,5 +100,7 @@ class ElasticDeformation(nn.Module):
         volume = torch.where(apply_transform, volume_changed, volume)
         gt_mask = torch.where(apply_transform, gt_mask_changed, gt_mask)
         gt_skel = torch.where(apply_transform, gt_skel_changed, gt_skel)
+        if gt_sdf is not None:
+            gt_sdf = torch.where(apply_transform, gt_sdf_changed, gt_sdf)
 
-        return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel}
+        return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel, 'gt_sdf': gt_sdf}

@@ -11,6 +11,8 @@ class RandRotate90_3D(nn.Module):
     Expected input shape: [B, D, H, W]
     """
 
+    possible_k: torch.Tensor
+
     def __init__(self, prob=0.4, possible_k=(1, 3), spatial_axes=(0, 1)):
         """
         Args:
@@ -34,16 +36,18 @@ class RandRotate90_3D(nn.Module):
     def rotate90(self, data):
         return torch.rot90(data, k=1, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
 
-    def forward(self, volume, gt_mask, gt_skel, **batch):
+    def forward(self, volume, gt_mask, gt_skel, gt_sdf=None, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
             gt_mask (Tensor): ground truth mask tensor.
             gt_skel (Tensor): ground truth skeleton tensor.
+            gt_sdf (None or Tensor): ground truth signed distance function tensor.
         Returns:
             volume (Tensor): randomly rotated volume tensor.
             gt_mask (Tensor): randomly rotated ground truth mask tensor.
             gt_skel (Tensor): randomly rotated ground truth skeleton tensor.
+            gt_sdf (None or Tensor): randomly rotated ground truth signed distance function tensor.
         """
 
         if volume.dim() != 4:
@@ -62,8 +66,10 @@ class RandRotate90_3D(nn.Module):
             volume = torch.where(apply, self.rotate90(volume), volume)
             gt_mask = torch.where(apply, self.rotate90(gt_mask), gt_mask)
             gt_skel = torch.where(apply, self.rotate90(gt_skel), gt_skel)
+            if gt_sdf is not None:
+                gt_sdf = torch.where(apply, self.rotate90(gt_sdf), gt_sdf)
 
-        return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel}
+        return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel, 'gt_sdf': gt_sdf}
 
 
 class Rotate90_3D(BaseTTATransform):
@@ -92,16 +98,18 @@ class Rotate90_3D(BaseTTATransform):
         self.k = k
         self.spatial_axes = spatial_axes
 
-    def forward(self, *, volume, gt_mask=None, gt_skel=None, **batch):
+    def forward(self, *, volume, gt_mask=None, gt_skel=None, gt_sdf=None, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
             gt_mask (None or Tensor): ground truth mask tensor.
             gt_skel (None or Tensor): ground truth skeleton tensor.
+            gt_sdf (None or Tensor): ground truth signed distance function tensor.
         Returns:
             volume (Tensor): rotated volume tensor.
             gt_mask (None or Tensor): rotated ground truth mask tensor.
             gt_skel (None or Tensor): rotated ground truth skeleton tensor.
+            gt_sdf (None or Tensor): rotated ground truth signed distance function tensor.
         """
 
         if volume.dim() != 4:
@@ -112,25 +120,30 @@ class Rotate90_3D(BaseTTATransform):
             gt_mask = torch.rot90(gt_mask, k=self.k, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
         if gt_skel is not None:
             gt_skel = torch.rot90(gt_skel, k=self.k, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
+        if gt_sdf is not None:
+            gt_sdf = torch.rot90(gt_sdf, k=self.k, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
 
         result = {'volume': volume}
         if gt_mask is not None:
             result['gt_mask'] = gt_mask
         if gt_skel is not None:
             result['gt_skel'] = gt_skel
-
+        if gt_sdf is not None:
+            result['gt_sdf'] = gt_sdf
         return result
 
-    def detransform(self, gt_mask=None, gt_skel=None, **batch):
+    def detransform(self, gt_mask=None, gt_skel=None, gt_sdf=None, **batch):
         """
         Args:
             logits (Tensor): rotated logits tensor.
             gt_mask (None or Tensor): rotated ground truth mask tensor.
             gt_skel (None or Tensor): rotated ground truth skeleton tensor.
+            gt_sdf (None or Tensor): rotated ground truth signed distance function tensor.
         Returns:
             logits (Tensor): derotated logits tensor.
             gt_mask (None or Tensor): derotated ground truth mask tensor.
             gt_skel (None or Tensor): derotated ground truth skeleton tensor.
+            gt_sdf (None or Tensor): derotated ground truth signed distance function tensor.
         """
 
         if 'probs' in batch:
@@ -146,6 +159,8 @@ class Rotate90_3D(BaseTTATransform):
             gt_mask = torch.rot90(gt_mask, k=-self.k, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
         if gt_skel is not None:
             gt_skel = torch.rot90(gt_skel, k=-self.k, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
+        if gt_sdf is not None:
+            gt_sdf = torch.rot90(gt_sdf, k=-self.k, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
 
         if 'probs' in batch:
             result = {'probs': preds}
@@ -156,6 +171,8 @@ class Rotate90_3D(BaseTTATransform):
             result['gt_mask'] = gt_mask
         if gt_skel is not None:
             result['gt_skel'] = gt_skel
+        if gt_sdf is not None:
+            result['gt_sdf'] = gt_sdf
 
         return result
 
@@ -207,14 +224,16 @@ class RandInstanceSmallRotate3D(nn.Module):
 
         return rot_z @ rot_y @ rot_x
 
-    def forward(self, volume, gt_mask, **batch):
+    def forward(self, volume, gt_mask, gt_sdf=None, **batch):
         """
         Args:
             volume (numpy array): volume tensor.
             gt_mask (numpy array): ground truth mask tensor.
+            gt_sdf (None or numpy array): ground truth signed distance function tensor.
         Returns:
             volume (numpy array): randomly rotated volume tensor.
             gt_mask (numpy array): randomly rotated ground truth mask tensor.
+            gt_sdf (None or numpy array): randomly rotated ground truth signed distance function tensor.
         """
 
         if volume.ndim != 4 or volume.shape[0] != 1:
@@ -254,4 +273,17 @@ class RandInstanceSmallRotate3D(nn.Module):
             cval=2
         )[None]
 
-        return {'volume': volume, 'gt_mask': gt_mask}
+        if gt_sdf is not None:
+            gt_sdf = affine_transform(
+                gt_sdf[0],
+                inverted_rotation_matrix,
+                offset=offset,
+                order=1,
+                mode='constant',
+                cval=gt_sdf.max()
+            )[None]
+
+        result = {'volume': volume, 'gt_mask': gt_mask}
+        if gt_sdf is not None:
+            result['gt_sdf'] = gt_sdf
+        return result

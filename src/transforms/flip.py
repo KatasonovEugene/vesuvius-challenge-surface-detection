@@ -22,16 +22,18 @@ class RandFlip3D(nn.Module):
         self.prob = min(1.0, max(0.0, prob))
         self.spatial_axis = spatial_axis
 
-    def forward(self, volume, gt_mask, gt_skel, **batch):
+    def forward(self, volume, gt_mask, gt_skel, gt_sdf=None, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
             gt_mask (Tensor): ground truth mask tensor.
             gt_skel (Tensor): ground truth skeleton tensor.
+            gt_sdf (None or Tensor): ground truth signed distance function tensor.
         Returns:
             volume (Tensor): randomly flipped volume tensor.
             gt_mask (Tensor): randomly flipped ground truth mask tensor.
             gt_skel (Tensor): randomly flipped ground truth skeleton tensor.
+            gt_sdf (None or Tensor): randomly flipped ground truth signed distance function tensor.
         """
 
         if volume.dim() != 4:
@@ -45,8 +47,9 @@ class RandFlip3D(nn.Module):
         volume = torch.where(apply_transform, flip(volume), volume)
         gt_mask = torch.where(apply_transform, flip(gt_mask), gt_mask)
         gt_skel = torch.where(apply_transform, flip(gt_skel), gt_skel)
-
-        return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel}
+        if gt_sdf is not None:
+            gt_sdf = torch.where(apply_transform, flip(gt_sdf), gt_sdf)
+        return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel, 'gt_sdf': gt_sdf}
 
 
 class Flip3D(BaseTTATransform):
@@ -65,16 +68,18 @@ class Flip3D(BaseTTATransform):
 
         self.spatial_axis = spatial_axis
 
-    def forward(self, *, volume, gt_mask=None, gt_skel=None, **batch):
+    def forward(self, *, volume, gt_mask=None, gt_skel=None, gt_sdf=None, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
             gt_mask (None or Tensor): ground truth mask tensor.
             gt_skel (None or Tensor): ground truth skeleton tensor.
+            gt_sdf (None or Tensor): ground truth signed distance function tensor.
         Returns:
             volume (Tensor): randomly flipped volume tensor.
             gt_mask (None or Tensor): randomly flipped ground truth mask tensor.
             gt_skel (None or Tensor): randomly flipped ground truth skeleton tensor.
+            gt_sdf (None or Tensor): randomly flipped ground truth signed distance function tensor.
         """
 
         if volume.dim() != 4:
@@ -85,26 +90,32 @@ class Flip3D(BaseTTATransform):
             gt_mask = torch.flip(gt_mask, dims=[self.spatial_axis + 1])
         if gt_skel is not None:
             gt_skel = torch.flip(gt_skel, dims=[self.spatial_axis + 1])
+        if gt_sdf is not None:
+            gt_sdf = torch.flip(gt_sdf, dims=[self.spatial_axis + 1])
 
         result = {'volume': volume}
         if gt_mask is not None:
             result['gt_mask'] = gt_mask
         if gt_skel is not None:
             result['gt_skel'] = gt_skel
+        if gt_sdf is not None:
+            result['gt_sdf'] = gt_sdf
 
         return result
 
 
-    def detransform(self, gt_mask=None, gt_skel=None, **batch):
+    def detransform(self, gt_mask=None, gt_skel=None, gt_sdf=None, **batch):
         """
         Args:
             logits (Tensor): rotated logits tensor.
             gt_mask (None or Tensor): rotated ground truth mask tensor.
             gt_skel (None or Tensor): rotated ground truth skeleton tensor.
+            gt_sdf (None or Tensor): rotated ground truth signed distance function tensor.
         Returns:
             logits (Tensor): derotated logits tensor.
             gt_mask (None or Tensor): derotated ground truth mask tensor.
             gt_skel (None or Tensor): derotated ground truth skeleton tensor.
+            gt_sdf (None or Tensor): derotated ground truth signed distance function tensor.
         """
 
         if 'probs' in batch:
@@ -120,6 +131,8 @@ class Flip3D(BaseTTATransform):
             gt_mask = torch.flip(gt_mask, dims=[self.spatial_axis + 1])
         if gt_skel is not None:
             gt_skel = torch.flip(gt_skel, dims=[self.spatial_axis + 1])
+        if gt_sdf is not None:
+            gt_sdf = torch.flip(gt_sdf, dims=[self.spatial_axis + 1])
 
         if 'probs' in batch:
             result = {'probs': preds}
@@ -130,5 +143,7 @@ class Flip3D(BaseTTATransform):
             result['gt_mask'] = gt_mask
         if gt_skel is not None:
             result['gt_skel'] = gt_skel
+        if gt_sdf is not None:
+            result['gt_sdf'] = gt_sdf
 
         return result

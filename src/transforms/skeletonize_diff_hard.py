@@ -573,14 +573,14 @@ class SkeletonizeDiffFast(torch.nn.Module):
 
     def _fast_endpoint_check(self, img):
         img = F.pad(img, (1, 1, 1, 1, 1, 1), value=0)
-        num_twentysix_neighbors = F.conv3d(img, self.kernel_n26)
+        num_twentysix_neighbors = F.conv3d(img, self.kernel_n26) # type:ignore
         return (num_twentysix_neighbors <= 1.0).float()
 
     def _fast_simple_check(self, img):
         img = F.pad(img, (1, 1, 1, 1, 1, 1), value=0)
 
-        num_twentysix_neighbors = F.conv3d(img, self.kernel_n26, stride=2)
-        num_six_neighbors = F.conv3d(img, self.kernel_n6, stride=2)
+        num_twentysix_neighbors = F.conv3d(img, self.kernel_n26, stride=2) # type:ignore
+        num_six_neighbors = F.conv3d(img, self.kernel_n6, stride=2) # type:ignore
 
         is_boundary = (num_six_neighbors < 6.0).float()
         has_enough_neighbors = (num_twentysix_neighbors >= float(self.min_neighbors)).float()

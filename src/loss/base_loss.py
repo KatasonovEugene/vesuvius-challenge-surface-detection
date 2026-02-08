@@ -8,12 +8,15 @@ class BaseLoss(nn.Module):
         self,
         num_classes,
         ce_weight=0.0,
+        boundary_ce_weight=0.0,
         cld_weight=0.0,
         dice_weight=0.0,
         skel_weight=0.0,
         fp_weight=0.0,
         tversky_weight=0.0,
         eps=1e-7,
+        boundary_ce_tau=3.0,
+        boundary_ce_alpha=1.5,
         cld_calc_gt_skel=False,
         cld_smooth_pred_skel=False,
         cld_smooth_mask_skel=False,
@@ -23,7 +26,6 @@ class BaseLoss(nn.Module):
         cld_use_fast_hard=True,
         cld_fast_kwargs=None,
         cld_iterations=1,
-        iterations=5,
         tversky_alpha=0.7,
         tversky_beta=0.3,
     ):
@@ -55,9 +57,15 @@ class BaseLoss(nn.Module):
             beta=tversky_beta,
             eps=eps
         )
+        self.boundary_ce_loss = BoundaryCELoss(
+            ignore_class_ids=2,
+            tau=boundary_ce_tau,
+            alpha=boundary_ce_alpha,
+        )
 
         self.losses = {
             "ce_loss": (ce_weight, self.ce_loss),
+            "boundary_ce_loss": (boundary_ce_weight, self.boundary_ce_loss),
             "cld_loss": (cld_weight, self.cld_loss),
             "dice_loss": (dice_weight, self.dice_loss),
             "skel_loss": (skel_weight, self.skel_loss),

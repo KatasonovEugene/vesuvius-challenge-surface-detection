@@ -18,16 +18,18 @@ class RandSpatialCrop3D(nn.Module):
 
         self.size = size
 
-    def forward(self, volume, gt_mask=None, gt_skel=None, **batch):
+    def forward(self, volume, gt_mask=None, gt_skel=None, gt_sdf=None, **batch):
         """
         Args:
             volume (numpy array): volume numpy array.
             gt_mask (numpy array): ground truth mask numpy array.
             gt_skel (numpy array): ground truth skeleton numpy array.
+            gt_sdf (numpy array): ground truth signed distance function numpy array.
         Returns:
             volume (numpy array): randomly cropped volume numpy array.
             gt_mask (numpy array): randomly cropped ground truth mask numpy array.
             gt_skel (numpy array): randomly cropped ground truth skeleton numpy array.
+            gt_sdf (numpy array): randomly cropped ground truth signed distance function numpy array.
         """
 
         if volume.ndim != 4:
@@ -55,12 +57,16 @@ class RandSpatialCrop3D(nn.Module):
             gt_mask = crop(gt_mask)
         if gt_skel is not None:
             gt_skel = crop(gt_skel)
+        if gt_sdf is not None:
+            gt_sdf = crop(gt_sdf)
 
         result = {'volume': volume}
         if gt_mask is not None: 
             result['gt_mask'] = gt_mask
         if gt_skel is not None: 
             result['gt_skel'] = gt_skel
+        if gt_sdf is not None:
+            result['gt_sdf'] = gt_sdf
         return result
 
 
@@ -72,7 +78,7 @@ class HighSumCrop3D(nn.Module):
         self.num_candidates = int(num_candidates)
         self.prefer_skeleton = bool(prefer_skeleton)
 
-    def forward(self, volume, gt_mask, gt_skel=None, old_gt_mask=None, **batch):
+    def forward(self, volume, gt_mask, gt_skel=None, gt_sdf=None, old_gt_mask=None, **batch):
         if volume.ndim != 4:
             raise RuntimeError(f'HighSumCrop3D: input shape was not expected; input shape: {volume.shape}; expected shape: [B, D, H, W]')
 
@@ -82,7 +88,7 @@ class HighSumCrop3D(nn.Module):
         out_vol = np.empty((B, sd, sh, sw), dtype=volume.dtype)
         out_msk = np.empty((B, sd, sh, sw), dtype=gt_mask.dtype)
         out_skel = np.empty((B, sd, sh, sw), dtype=gt_skel.dtype) if gt_skel is not None else None
-
+        out_sdf = np.empty((B, sd, sh, sw), dtype=gt_sdf.dtype) if gt_sdf is not None else None
         is_high_sum_crop = np.random.rand(1) <= self.prob
         if is_high_sum_crop:
             num_candidates = self.num_candidates
@@ -119,8 +125,11 @@ class HighSumCrop3D(nn.Module):
             out_msk[b] = gt_mask[b, bz:bz+sd, by:by+sh, bx:bx+sw]
             if out_skel is not None:
                 out_skel[b] = gt_skel[b, bz:bz+sd, by:by+sh, bx:bx+sw]
-
+            if out_sdf is not None:
+                out_sdf[b] = gt_sdf[b, bz:bz+sd, by:by+sh, bx:bx+sw]
         result = {"volume": out_vol, "gt_mask": out_msk}
         if out_skel is not None:
             result["gt_skel"] = out_skel
+        if out_sdf is not None:
+            result["gt_sdf"] = out_sdf
         return result

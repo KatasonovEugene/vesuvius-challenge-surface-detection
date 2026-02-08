@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 
 class nnUnetLoss(nn.Module):
@@ -28,9 +29,14 @@ class nnUnetLoss(nn.Module):
         mask = mask.index_select(4, idx_w)
         return mask
 
-    def forward(self, logits, outputs, gt_mask, gt_skel, **batch):
+    @staticmethod
+    def _linear_resize_float(volume, size):  # volume: [B, C, D, H, W]
+        D_out, H_out, W_out = size
+        return F.interpolate(volume, size=(D_out, H_out, W_out), mode='trilinear', align_corners=True)
+
+    def forward(self, logits, outputs, gt_mask, gt_skel, gt_sdf, **batch):
         if outputs is None:
-            return self.base_loss(logits=logits, gt_mask=gt_mask, gt_skel=gt_skel)
+            return self.base_loss(logits=logits, gt_mask=gt_mask, gt_skel=gt_skel, gt_sdf=gt_sdf)
 
         n_heads = outputs.shape[1]
         if self.ds_weights is None:
@@ -46,10 +52,11 @@ class nnUnetLoss(nn.Module):
             if logits_i.shape[2:] != gt_mask.shape[1:]:
                 gt_mask_i = self._nearest_resize_int(gt_mask.unsqueeze(1), size=logits_i.shape[2:]).squeeze(1)
                 gt_skel_i = self._nearest_resize_int(gt_skel.unsqueeze(1), size=logits_i.shape[2:]).squeeze(1)
+                gt_sdf_i = self._linear_resize_float(gt_sdf.unsqueeze(1), size=logits_i.shape[2:]).squeeze(1)
             else:
-                gt_mask_i, gt_skel_i = gt_mask, gt_skel
+                gt_mask_i, gt_skel_i, gt_sdf_i = gt_mask, gt_skel, gt_sdf
 
-            result_i = self.base_loss(logits=logits_i, gt_mask=gt_mask_i, gt_skel=gt_skel_i)
+            result_i = self.base_loss(logits=logits_i, gt_mask=gt_mask_i, gt_skel=gt_skel_i, gt_sdf=gt_sdf_i)
 
             weight = self.ds_weights[i]
             if accum_results == {}:

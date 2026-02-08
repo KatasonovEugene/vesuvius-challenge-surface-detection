@@ -89,7 +89,7 @@ class VesuviusDataset(BaseDataset):
             is_item_in_dataset = (
                 (part == 'train' and i >= num_val_images) or
                 (part == 'val' and i < num_val_images) or
-                part != 'test'
+                part == 'test'
             )
             if is_item_in_dataset:
                 index.append(item)
@@ -128,6 +128,7 @@ class VesuviusDataset(BaseDataset):
             instance_data.update({
                 'gt_mask': target,
                 'gt_skel': target,
+                'gt_sdf': target,
             })
         instance_data = self.preprocess_data(instance_data)
         return instance_data
