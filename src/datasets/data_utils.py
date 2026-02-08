@@ -38,8 +38,6 @@ def move_batch_transforms_to_device(batch_transforms, device):
         device (str): device to use for batch transforms.
     """
 
-    print(device)
-
     for transform_type in batch_transforms.keys():
         transforms = batch_transforms.get(transform_type)
         if transforms is not None:
