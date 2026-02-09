@@ -65,9 +65,9 @@ class nnUNetDetector4OutputChannels(nn.Module):
         volume = volume.unsqueeze(1)
         logits = self.backbone(volume)    # (B, 5, D, H, W)
         if self.training:
-            return {'logits': logits[:, 0, :2], "vector_logits": logits[:, 0, 2:], "full_logits": logits[:, :, :2], "full_vector_logits": logits[:, :, 2:]}
+            return {'logits': logits[:, 0], "outputs": logits}
         else:
-            return {'logits': logits[:, :2], "vector_logits": logits[:, 2:], "full_logits": None, "full_vector_logits": None}
+            return {'logits': logits, "outputs": None}
 
 
 class nnUNetDetector2Backbones(nn.Module):
