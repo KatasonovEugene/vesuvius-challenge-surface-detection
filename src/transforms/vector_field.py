@@ -4,12 +4,10 @@ from torch import nn
 
 
 class VectorField3D(nn.Module):
-
     def __init__(self):
         super().__init__()
 
     def forward(self, volume, gt_mask, gt_skel=None, **batch):
-
         if volume.ndim != 4:
             raise RuntimeError(f'VectorField3D: input shape was not expected; input shape: {volume.shape}; expected shape: [B, D, H, W]')
 

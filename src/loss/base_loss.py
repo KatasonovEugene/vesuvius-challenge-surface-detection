@@ -13,6 +13,7 @@ class BaseLoss(nn.Module):
         skel_weight=0.0,
         fp_weight=0.0,
         tversky_weight=0.0,
+        vec_weight=0.0,
         eps=1e-7,
         cld_calc_gt_skel=False,
         cld_smooth_pred_skel=False,
@@ -55,7 +56,7 @@ class BaseLoss(nn.Module):
             beta=tversky_beta,
             eps=eps
         )
-
+        self.vec_loss = VecLoss(eps=eps)
         self.losses = {
             "ce_loss": (ce_weight, self.ce_loss),
             "cld_loss": (cld_weight, self.cld_loss),
@@ -63,6 +64,7 @@ class BaseLoss(nn.Module):
             "skel_loss": (skel_weight, self.skel_loss),
             "fp_loss": (fp_weight, self.fp_loss),
             "tversky_loss": (tversky_weight, self.tversky_loss),
+            "vec_loss": (vec_weight, self.vec_loss),
         }
         self.names = []
         for loss_name, (loss_weight, _) in self.losses.items():

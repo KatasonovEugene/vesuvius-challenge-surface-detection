@@ -5,8 +5,12 @@ train:
     num_candidates: 10
     prefer_skeleton: False
   skeletonize:
-    _target_: src.transforms.Skeletonize # skeletonize must be after crop
+    _target_: src.transforms.MedialSurface # skeletonize must be after crop
+    pseudo3d: False
+    do_tube: False
     dilation_iterations: 1
+  calc_normal_field:
+    _target_: src.transforms.VectorField3D
   to_torch:
     _target_: src.transforms.ToTorch # to_torch must be after skeletonize
   scale_intensity:
@@ -31,8 +35,12 @@ train:
 
 inference:
   skeletonize:
-    _target_: src.transforms.Skeletonize # skeletonize must be after crop
+    _target_: src.transforms.MedialSurface # skeletonize must be after crop
+    pseudo3d: False
+    do_tube: False
     dilation_iterations: 1
+  calc_normal_field:
+    _target_: src.transforms.VectorField3D
   to_torch:
     _target_: src.transforms.ToTorch # to_torch must be after skeletonize
   scale_intensity:

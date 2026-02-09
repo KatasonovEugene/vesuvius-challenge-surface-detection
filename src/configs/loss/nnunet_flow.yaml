@@ -1,0 +1,11 @@
+_target_: src.loss.nnUnetLoss
+base_loss:
+  _target_: src.loss.BaseLoss
+  num_classes: 2
+  vec_weight: 1.0
+  ce_weight: 0.5
+  dice_weight: 0.8
+  skel_weight: 0.5
+  fp_weight: 0.3
+  eps: 1e-7
+ds_weights: null

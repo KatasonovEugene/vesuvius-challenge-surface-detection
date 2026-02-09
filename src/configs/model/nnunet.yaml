@@ -1,9 +1,9 @@
 _target_: src.model.SlidingWindowWrapper
 model:
-  _target_: src.model.nnUNetDetector
+  _target_: src.model.nnUNetDetector4OutputChannels
   spatial_dims: 3
   in_channels: 1
-  out_channels: 2
+  out_channels: 5
   features_per_stage: [32, 64, 128, 256, 320, 320]
   kernel_size: [[3, 3, 3],[3, 3, 3],[3, 3, 3],[3, 3, 3],[3, 3, 3],[3, 3, 3]]
   strides: [[1, 1, 1],[2, 2, 2],[2, 2, 2],[2, 2, 2],[2, 2, 2],[2, 2, 2]]

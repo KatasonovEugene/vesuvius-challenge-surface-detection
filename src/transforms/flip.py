@@ -22,7 +22,7 @@ class RandFlip3D(nn.Module):
         self.prob = min(1.0, max(0.0, prob))
         self.spatial_axis = spatial_axis
 
-    def forward(self, volume, gt_mask, gt_skel, **batch):
+    def forward(self, volume, gt_mask, gt_skel, vector, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
@@ -46,7 +46,13 @@ class RandFlip3D(nn.Module):
         gt_mask = torch.where(apply_transform, flip(gt_mask), gt_mask)
         gt_skel = torch.where(apply_transform, flip(gt_skel), gt_skel)
 
-        return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel}
+        flip_vec = torch.flip(vector, dims=[self.spatial_axis + 2])
+        sign = torch.ones_like(vector)
+        sign[:, self.spatial_axis] *= -1
+        flip_vec *= sign
+        vector = torch.where(apply_transform.unsqueeze(1), flip_vec, vector)
+
+        return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel, 'vector': vector}
 
 
 class Flip3D(BaseTTATransform):
