@@ -9,6 +9,7 @@ class BaseLoss(nn.Module):
         num_classes,
         ce_weight=0.0,
         cld_weight=0.0,
+        cld_max_weight=0.0,
         dice_weight=0.0,
         skel_weight=0.0,
         fp_weight=0.0,
@@ -24,6 +25,8 @@ class BaseLoss(nn.Module):
         cld_fast_kwargs=None,
         cld_iterations=1,
         cld_warmup_steps=5000,
+        cld_second_wave_start_step=40000,
+        cld_second_wave_warmup_steps=5000,
         cld_eps=1e-4,
         cld_use_clipping=True,
         cld_clip_value=1.0,
@@ -34,6 +37,9 @@ class BaseLoss(nn.Module):
         self.num_classes = num_classes
 
         self.ce_loss = CELoss(ignore_class_ids=2) 
+
+        if cld_max_weight == 0.0:
+            cld_max_weight = cld_weight
         self.cld_loss = ClDiceLoss(
             calc_gt_skel=cld_calc_gt_skel,
             smooth_pred_skel=cld_smooth_pred_skel,
@@ -47,8 +53,12 @@ class BaseLoss(nn.Module):
             use_clipping=cld_use_clipping,
             warmup_steps=cld_warmup_steps,
             clip_value=cld_clip_value,
+            max_weight=cld_max_weight/cld_weight if cld_weight != 0.0 else 0.0,
+            second_wave_start_step=cld_second_wave_start_step,
+            second_wave_warmup_steps=cld_second_wave_warmup_steps,
             eps=cld_eps,
         )
+
         self.dice_loss = DiceLoss(
             num_classes=num_classes,
             ignore_class_ids=2,
@@ -88,6 +98,9 @@ class BaseLoss(nn.Module):
             batch['probs'] = torch.softmax(batch['logits'], dim=1)
             assert batch['probs'].shape[1] == self.num_classes
             assert batch['probs'].ndim == 5
+
+        if 'training_steps' in batch:
+            self.update_cld_weight(batch['training_steps'])
 
         loss_results = dict()
         for loss_name, (loss_weight, loss_fn) in self.losses.items():

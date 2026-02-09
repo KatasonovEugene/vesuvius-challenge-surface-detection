@@ -22,6 +22,9 @@ class ClDiceLoss(nn.Module):
         use_clipping=True,
         clip_value=1.0,
         warmup_steps=5000,
+        max_weight=1.0,
+        second_wave_start_step=40000,
+        second_wave_warmup_steps=5000,
         eps=1e-4,
     ):
         super().__init__()
@@ -45,6 +48,9 @@ class ClDiceLoss(nn.Module):
                 self.skeletonize_pred = SkeletonizeDiffHard(probabilistic=True, num_iter=iterations, simple_point_detection='Boolean')
         else:
             self.skeletonize_mask = self.skeletonize_pred = SkeletonizeDiff(iterations=iterations)
+        self.max_weight = max_weight
+        self.second_wave_start_step = second_wave_start_step
+        self.second_wave_warmup_steps = second_wave_warmup_steps
 
     def downsample(self, volume, mode='avg'):
         if mode == 'max':
@@ -110,7 +116,13 @@ class ClDiceLoss(nn.Module):
         clDice_score = (2 * Tprec * Tsens + self.eps) / (Tprec + Tsens + self.eps)
         cldice_loss = 1.0 - clDice_score.mean()
 
-        if training_steps is not None and training_steps < self.warmup_steps:
+        if training_steps is not None and training_steps < self.warmup_steps: # 0.0 -> 1.0
             cldice_loss = cldice_loss * (training_steps / self.warmup_steps)
+        if training_steps is not None and training_steps >= self.second_wave_start_step: # 1.0 -> max_weight
+            if self.second_wave_warmup_steps > 0:
+                second_wave_factor = min((training_steps - self.second_wave_start_step) / self.second_wave_warmup_steps, 1.0)
+            else:
+                second_wave_factor = 1.0
+            cldice_loss = cldice_loss * (1.0 + (self.max_weight - 1.0) * second_wave_factor)
 
         return cldice_loss
