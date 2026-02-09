@@ -18,6 +18,7 @@ trainer:
   device_tensors: ["volume", "gt_mask", "gt_skel"]
   use_amp: False
   amp_dtype: "bfloat16"
+  max_grad_norm: 5
   resume_from: null
   from_pretrained: null
   device: auto
