@@ -28,9 +28,9 @@ class nnUnetLoss(nn.Module):
         mask = mask.index_select(4, idx_w)
         return mask
 
-    def forward(self, logits, outputs, gt_mask, gt_skel, **batch):
+    def forward(self, logits, outputs, gt_mask, gt_skel, training_steps=None, **batch):
         if outputs is None:
-            return self.base_loss(logits=logits, gt_mask=gt_mask, gt_skel=gt_skel)
+            return self.base_loss(logits=logits, gt_mask=gt_mask, gt_skel=gt_skel, training_steps=training_steps)
 
         n_heads = outputs.shape[1]
         if self.ds_weights is None:
@@ -49,7 +49,7 @@ class nnUnetLoss(nn.Module):
             else:
                 gt_mask_i, gt_skel_i = gt_mask, gt_skel
 
-            result_i = self.base_loss(logits=logits_i, gt_mask=gt_mask_i, gt_skel=gt_skel_i)
+            result_i = self.base_loss(logits=logits_i, gt_mask=gt_mask_i, gt_skel=gt_skel_i, training_steps=training_steps)
 
             weight = self.ds_weights[i]
             if accum_results == {}:

@@ -23,7 +23,10 @@ class BaseLoss(nn.Module):
         cld_use_fast_hard=True,
         cld_fast_kwargs=None,
         cld_iterations=1,
-        iterations=5,
+        cld_warmup_steps=5000,
+        cld_eps=1e-4,
+        cld_use_clipping=True,
+        cld_clip_value=1.0,
         tversky_alpha=0.7,
         tversky_beta=0.3,
     ):
@@ -41,7 +44,10 @@ class BaseLoss(nn.Module):
             use_fast_hard=cld_use_fast_hard,
             fast_kwargs=cld_fast_kwargs,
             iterations=cld_iterations,
-            eps=eps,
+            use_clipping=cld_use_clipping,
+            warmup_steps=cld_warmup_steps,
+            clip_value=cld_clip_value,
+            eps=cld_eps,
         )
         self.dice_loss = DiceLoss(
             num_classes=num_classes,

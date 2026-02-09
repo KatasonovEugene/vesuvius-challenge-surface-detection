@@ -14,5 +14,9 @@ base_loss:
   cld_use_downsampling: False
   cld_use_hard_diff: True
   cld_use_fast_hard: True
+  cld_warmup_steps: 5000
+  cld_eps: 1e-5
+  cld_use_clipping: True  # clip = denominator min value
+  cld_clip_value: 1.0
   cld_iterations: 1
 ds_weights: null

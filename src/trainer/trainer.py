@@ -11,6 +11,7 @@ class Trainer(BaseTrainer):
         super().__init__(*args, **kwargs)
         self.log_batch_plots = log_batch_plots
         self.view_3d_online = view_3d_online
+        self.training_steps = 0
 
     def process_batch(self, batch, metrics: MetricTracker):
         batch = self.move_batch_to_device(batch)
@@ -24,7 +25,7 @@ class Trainer(BaseTrainer):
         with self._autocast_context():
             outputs = self.model(**batch)
             batch.update(outputs)
-            all_losses = self.criterion(**batch)
+            all_losses = self.criterion(training_steps=self.training_steps, **batch)
         batch.update(all_losses)
 
         if self.is_train:
@@ -41,6 +42,7 @@ class Trainer(BaseTrainer):
 
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
+            self.training_steps += 1
 
         if self.log_batch_plots:
             if 'outputs' not in batch:

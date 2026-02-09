@@ -19,7 +19,10 @@ class ClDiceLoss(nn.Module):
         use_fast_hard=True,
         fast_kwargs=None,
         iterations=1,
-        eps=1e-7,
+        use_clipping=True,
+        clip_value=1.0,
+        warmup_steps=5000,
+        eps=1e-4,
     ):
         super().__init__()
         self.eps = eps
@@ -29,6 +32,9 @@ class ClDiceLoss(nn.Module):
         self.smooth_mask_skel = smooth_mask_skel
         self.sigma = sigma
         self.use_hard_diff = use_hard_diff
+        self.use_clipping = use_clipping
+        self.warmup_steps = warmup_steps
+        self.clip_value = clip_value
         if use_hard_diff:
             fast_kwargs = fast_kwargs or {}
             if use_fast_hard:
@@ -65,7 +71,7 @@ class ClDiceLoss(nn.Module):
         else:
             return self.skeletonize_pred(volume)['pred_skel']
 
-    def forward(self, probs, gt_mask, gt_skel, **batch):
+    def forward(self, probs, gt_mask, gt_skel, training_steps=None, **batch):
         dims = (1, 2, 3) 
         probs = probs[:, 1]
         valid_mask = (gt_mask != 2).float()
@@ -87,13 +93,24 @@ class ClDiceLoss(nn.Module):
 
         sens_intersect = (gt_skel * probs * valid_mask).sum(dim=dims)
         gt_skel_sum = (gt_skel * valid_mask).sum(dim=dims)
-        Tsens = (sens_intersect + self.eps) / (gt_skel_sum + self.eps)
+        if self.use_clipping:
+            gt_skel_sum = torch.clamp(gt_skel_sum, min=self.clip_value)
+            Tsens = (sens_intersect + self.eps) / gt_skel_sum
+        else:
+            Tsens = (sens_intersect + self.eps) / (gt_skel_sum + self.eps)
 
         prec_intersect = (pred_skel * gt_mask * valid_mask).sum(dim=dims)
         pred_skel_sum = (pred_skel * valid_mask).sum(dim=dims)
-        Tprec = (prec_intersect + self.eps) / (pred_skel_sum + self.eps)
+        if self.use_clipping:
+            pred_skel_sum = torch.clamp(pred_skel_sum, min=self.clip_value)
+            Tprec = (prec_intersect + self.eps) / pred_skel_sum
+        else:
+            Tprec = (prec_intersect + self.eps) / (pred_skel_sum + self.eps)
 
         clDice_score = (2 * Tprec * Tsens + self.eps) / (Tprec + Tsens + self.eps)
         cldice_loss = 1.0 - clDice_score.mean()
+
+        if training_steps is not None and training_steps < self.warmup_steps:
+            cldice_loss = cldice_loss * (training_steps / self.warmup_steps)
 
         return cldice_loss
