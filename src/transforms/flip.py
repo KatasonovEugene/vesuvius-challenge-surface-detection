@@ -22,7 +22,7 @@ class RandFlip3D(nn.Module):
         self.prob = min(1.0, max(0.0, prob))
         self.spatial_axis = spatial_axis
 
-    def forward(self, volume, gt_mask, gt_skel, **batch):
+    def forward(self, volume, gt_mask, gt_skel, old_gt_mask=None, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
@@ -45,7 +45,11 @@ class RandFlip3D(nn.Module):
         volume = torch.where(apply_transform, flip(volume), volume)
         gt_mask = torch.where(apply_transform, flip(gt_mask), gt_mask)
         gt_skel = torch.where(apply_transform, flip(gt_skel), gt_skel)
+        if old_gt_mask is not None:
+            old_gt_mask = torch.where(apply_transform, flip(old_gt_mask), old_gt_mask)
 
+        if old_gt_mask is not None:
+            return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel, 'old_gt_mask': old_gt_mask}
         return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel}
 
 
@@ -65,7 +69,7 @@ class Flip3D(BaseTTATransform):
 
         self.spatial_axis = spatial_axis
 
-    def forward(self, *, volume, gt_mask=None, gt_skel=None, **batch):
+    def forward(self, *, volume, gt_mask=None, gt_skel=None, old_gt_mask=None, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
@@ -85,17 +89,21 @@ class Flip3D(BaseTTATransform):
             gt_mask = torch.flip(gt_mask, dims=[self.spatial_axis + 1])
         if gt_skel is not None:
             gt_skel = torch.flip(gt_skel, dims=[self.spatial_axis + 1])
+        if old_gt_mask is not None:
+            old_gt_mask = torch.flip(old_gt_mask, dims=[self.spatial_axis + 1])
 
         result = {'volume': volume}
         if gt_mask is not None:
             result['gt_mask'] = gt_mask
         if gt_skel is not None:
             result['gt_skel'] = gt_skel
+        if old_gt_mask is not None:
+            result['old_gt_mask'] = old_gt_mask
 
         return result
 
 
-    def detransform(self, gt_mask=None, gt_skel=None, **batch):
+    def detransform(self, gt_mask=None, gt_skel=None, old_gt_mask=None, **batch):
         """
         Args:
             logits (Tensor): rotated logits tensor.
@@ -118,6 +126,8 @@ class Flip3D(BaseTTATransform):
         preds = torch.flip(preds, dims=[self.spatial_axis + 2])
         if gt_mask is not None:
             gt_mask = torch.flip(gt_mask, dims=[self.spatial_axis + 1])
+        if old_gt_mask is not None:
+            old_gt_mask = torch.flip(old_gt_mask, dims=[self.spatial_axis + 1])
         if gt_skel is not None:
             gt_skel = torch.flip(gt_skel, dims=[self.spatial_axis + 1])
 
@@ -130,5 +140,7 @@ class Flip3D(BaseTTATransform):
             result['gt_mask'] = gt_mask
         if gt_skel is not None:
             result['gt_skel'] = gt_skel
+        if old_gt_mask is not None:
+            result['old_gt_mask'] = old_gt_mask
 
         return result

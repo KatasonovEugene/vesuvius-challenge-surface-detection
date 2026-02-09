@@ -10,11 +10,14 @@ class TverskyLoss(nn.Module):
         self.beta = beta
         self.eps = eps
 
-    def forward(self, probs, gt_mask, **batch):
+    def forward(self, probs, gt_mask, weights=None, **batch):
         probs = probs[:, 1]
         valid_mask = (gt_mask != 2).float()
         gt_positive = (gt_mask == 1).float()
         gt_negative = (gt_mask == 0).float()
+
+        if weights is not None:
+            valid_mask = weights * valid_mask
 
         TP = (probs * gt_positive * valid_mask).sum(dim=(1, 2, 3))
         FP = (probs * gt_negative * valid_mask).sum(dim=(1, 2, 3))

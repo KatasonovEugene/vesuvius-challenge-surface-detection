@@ -50,7 +50,7 @@ class ZDrop3D(nn.Module):
             mask = mask | unlabeled_mask
         return tensor * mask
 
-    def forward(self, volume, gt_mask, gt_skel, **batch):
+    def forward(self, volume, gt_mask, gt_skel, old_gt_mask=None, **batch):
         B, D, _, _ = volume.shape
         device = volume.device
 
@@ -58,6 +58,8 @@ class ZDrop3D(nn.Module):
         drop_mask = self._get_drop_mask(B, D, device)
 
         old_tensors = dict(volume=volume, gt_mask=gt_mask, gt_skel=gt_skel)
+        if old_gt_mask is not None:
+            old_tensors['old_gt_mask'] = old_gt_mask
         new_tensors = dict()
 
         if self.fill_mode == 'zero':

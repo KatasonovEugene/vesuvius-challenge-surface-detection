@@ -96,9 +96,9 @@ class Cutout3D(nn.Module):
             mask = torch.where(fill_mask, self.fill_with_unlabeled(mask), mask)
         return mask
 
-    def cutout(self, volume, gt_mask, gt_skel, **batch):
+    def cutout(self, volume, gt_mask, gt_skel, old_gt_mask=None, **batch):
         if volume.shape[0] == 0:
-            return volume, gt_mask, gt_skel
+            return volume, gt_mask, gt_skel, old_gt_mask
 
         size = torch.cat([
             torch.randint(self.depth[0], self.depth[1] + 1, size=(1,), device=volume.device),
@@ -125,9 +125,11 @@ class Cutout3D(nn.Module):
         volume = self.volume_fill(volume, b_idx, z_idx, y_idx, x_idx)
         gt_mask = self.mask_fill(gt_mask, b_idx, z_idx, y_idx, x_idx)
         gt_skel = self.mask_fill(gt_skel, b_idx, z_idx, y_idx, x_idx)
-        return volume, gt_mask, gt_skel
+        if old_gt_mask is not None:
+            old_gt_mask = self.mask_fill(old_gt_mask, b_idx, z_idx, y_idx, x_idx)
+        return volume, gt_mask, gt_skel, old_gt_mask
 
-    def forward(self, volume, gt_mask, gt_skel, **batch):
+    def forward(self, volume, gt_mask, gt_skel, old_gt_mask=None, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
@@ -152,10 +154,13 @@ class Cutout3D(nn.Module):
         for hole_idx in range(1, self.holes[1] + 1):
             apply = (num_holes >= hole_idx).view(-1, 1, 1, 1)
 
-            cutted_volume, cutted_gt_mask, cutted_gt_skel = self.cutout(volume, gt_mask, gt_skel)
+            cutted_volume, cutted_gt_mask, cutted_gt_skel, cutted_old_gt_mask = self.cutout(volume, gt_mask, gt_skel, old_gt_mask)
 
             volume = torch.where(apply, cutted_volume, volume)
             gt_mask = torch.where(apply, cutted_gt_mask, gt_mask)
             gt_skel = torch.where(apply, cutted_gt_skel, gt_skel)
-
+            if old_gt_mask is not None:
+                old_gt_mask = torch.where(apply, cutted_old_gt_mask, old_gt_mask)
+        if old_gt_mask is not None:
+            return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel, 'old_gt_mask': old_gt_mask}
         return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel}

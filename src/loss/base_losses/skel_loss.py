@@ -7,10 +7,13 @@ class SkelLoss(nn.Module):
         super().__init__()
         self.eps = eps
 
-    def forward(self, probs: torch.Tensor, gt_mask: torch.Tensor, gt_skel: torch.Tensor, **batch):
+    def forward(self, probs: torch.Tensor, gt_mask: torch.Tensor, gt_skel: torch.Tensor, weights=None, **batch):
         dims = (1, 2, 3) 
         pred_prob = probs[:, 1]
         valid_mask = (gt_mask != 2).float()
+
+        if weights is not None:
+            valid_mask = weights * valid_mask
 
         intersection = (pred_prob * gt_skel * valid_mask).sum(dim=dims)
         skel_sum = (gt_skel * valid_mask).sum(dim=dims)

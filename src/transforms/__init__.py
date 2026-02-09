@@ -16,3 +16,4 @@ from src.transforms.z_drop import ZDrop3D
 from src.transforms.zoom import RandInstanceZoom3D
 from src.transforms.noise import RandAddStructuredNoise3D
 from src.transforms.skeletonize_diff_hard import SkeletonizeDiffHard, SkeletonizeDiffFast
+from src.transforms.pseudo_weights import ConstantPseudoWeights

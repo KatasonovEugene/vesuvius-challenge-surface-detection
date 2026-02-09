@@ -34,7 +34,7 @@ class RandRotate90_3D(nn.Module):
     def rotate90(self, data):
         return torch.rot90(data, k=1, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
 
-    def forward(self, volume, gt_mask, gt_skel, **batch):
+    def forward(self, volume, gt_mask, gt_skel, old_gt_mask=None, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
@@ -62,7 +62,11 @@ class RandRotate90_3D(nn.Module):
             volume = torch.where(apply, self.rotate90(volume), volume)
             gt_mask = torch.where(apply, self.rotate90(gt_mask), gt_mask)
             gt_skel = torch.where(apply, self.rotate90(gt_skel), gt_skel)
-
+            if old_gt_mask is not None:
+                old_gt_mask = torch.where(apply, self.rotate90(old_gt_mask), old_gt_mask)
+    
+        if old_gt_mask is not None:
+            return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel, 'old_gt_mask': old_gt_mask}
         return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel}
 
 
@@ -92,7 +96,7 @@ class Rotate90_3D(BaseTTATransform):
         self.k = k
         self.spatial_axes = spatial_axes
 
-    def forward(self, *, volume, gt_mask=None, gt_skel=None, **batch):
+    def forward(self, *, volume, gt_mask=None, gt_skel=None, old_gt_mask=None, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
@@ -112,16 +116,20 @@ class Rotate90_3D(BaseTTATransform):
             gt_mask = torch.rot90(gt_mask, k=self.k, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
         if gt_skel is not None:
             gt_skel = torch.rot90(gt_skel, k=self.k, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
+        if old_gt_mask is not None:
+            old_gt_mask = torch.rot90(old_gt_mask, k=self.k, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
 
         result = {'volume': volume}
         if gt_mask is not None:
             result['gt_mask'] = gt_mask
         if gt_skel is not None:
             result['gt_skel'] = gt_skel
+        if old_gt_mask is not None:
+            result['old_gt_mask'] = old_gt_mask
 
         return result
 
-    def detransform(self, gt_mask=None, gt_skel=None, **batch):
+    def detransform(self, gt_mask=None, gt_skel=None, old_gt_mask=None, **batch):
         """
         Args:
             logits (Tensor): rotated logits tensor.
@@ -146,6 +154,8 @@ class Rotate90_3D(BaseTTATransform):
             gt_mask = torch.rot90(gt_mask, k=-self.k, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
         if gt_skel is not None:
             gt_skel = torch.rot90(gt_skel, k=-self.k, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
+        if old_gt_mask is not None:
+            old_gt_mask = torch.rot90(old_gt_mask, k=-self.k, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
 
         if 'probs' in batch:
             result = {'probs': preds}
@@ -156,6 +166,8 @@ class Rotate90_3D(BaseTTATransform):
             result['gt_mask'] = gt_mask
         if gt_skel is not None:
             result['gt_skel'] = gt_skel
+        if old_gt_mask is not None:
+            result['old_gt_mask'] = old_gt_mask
 
         return result
 
@@ -207,7 +219,7 @@ class RandInstanceSmallRotate3D(nn.Module):
 
         return rot_z @ rot_y @ rot_x
 
-    def forward(self, volume, gt_mask, **batch):
+    def forward(self, volume, gt_mask, old_gt_mask=None, **batch): # do only before skeletonize
         """
         Args:
             volume (numpy array): volume tensor.
@@ -223,6 +235,8 @@ class RandInstanceSmallRotate3D(nn.Module):
         apply_transform = np.random.rand() < self.prob
 
         if not apply_transform:
+            if old_gt_mask is not None:
+                return {'volume': volume, 'gt_mask': gt_mask, 'old_gt_mask': old_gt_mask}
             return {'volume': volume, 'gt_mask': gt_mask}
 
         angles = np.radians([
@@ -254,4 +268,16 @@ class RandInstanceSmallRotate3D(nn.Module):
             cval=2
         )[None]
 
+        if old_gt_mask is not None:
+            old_gt_mask = affine_transform(
+                old_gt_mask[0],
+                inverted_rotation_matrix,
+                offset=offset,
+                order=0,
+                mode='constant',
+                cval=2
+            )[None]
+
+        if old_gt_mask is not None:
+            return {'volume': volume, 'gt_mask': gt_mask, 'old_gt_mask': old_gt_mask}
         return {'volume': volume, 'gt_mask': gt_mask}

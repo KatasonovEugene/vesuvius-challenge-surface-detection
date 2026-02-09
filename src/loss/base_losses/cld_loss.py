@@ -71,16 +71,20 @@ class ClDiceLoss(nn.Module):
         else:
             return self.skeletonize_pred(volume)['pred_skel']
 
-    def forward(self, probs, gt_mask, gt_skel, training_steps=None, **batch):
+    def forward(self, probs, gt_mask, gt_skel, weights=None, training_steps=None, **batch):
         dims = (1, 2, 3) 
         probs = probs[:, 1]
         valid_mask = (gt_mask != 2).float()
 
         if self.use_downsampling:
             probs = self.downsample(probs, 'avg')
+            weights = self.downsample(weights, 'avg') if weights is not None else None
             gt_skel = self.downsample(gt_skel.float(), 'max').bool()
             valid_mask = self.downsample(valid_mask.float(), 'min').float()
             gt_mask = self.downsample((gt_mask == 1).float(), 'max').to(torch.int8)
+
+        if weights is not None:
+            valid_mask = valid_mask * weights
 
         if self.calc_gt_skel:
             gt_skel = self.get_mask_skel(gt_mask)

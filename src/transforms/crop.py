@@ -18,7 +18,7 @@ class RandSpatialCrop3D(nn.Module):
 
         self.size = size
 
-    def forward(self, volume, gt_mask=None, gt_skel=None, **batch):
+    def forward(self, volume, gt_mask=None, gt_skel=None, old_gt_mask=None, **batch):
         """
         Args:
             volume (numpy array): volume numpy array.
@@ -55,12 +55,16 @@ class RandSpatialCrop3D(nn.Module):
             gt_mask = crop(gt_mask)
         if gt_skel is not None:
             gt_skel = crop(gt_skel)
+        if old_gt_mask is not None:
+            old_gt_mask = crop(old_gt_mask)
 
         result = {'volume': volume}
         if gt_mask is not None: 
             result['gt_mask'] = gt_mask
         if gt_skel is not None: 
             result['gt_skel'] = gt_skel
+        if old_gt_mask is not None:
+            result['old_gt_mask'] = old_gt_mask
         return result
 
 
@@ -82,6 +86,7 @@ class HighSumCrop3D(nn.Module):
         out_vol = np.empty((B, sd, sh, sw), dtype=volume.dtype)
         out_msk = np.empty((B, sd, sh, sw), dtype=gt_mask.dtype)
         out_skel = np.empty((B, sd, sh, sw), dtype=gt_skel.dtype) if gt_skel is not None else None
+        out_old_msk = np.empty((B, sd, sh, sw), dtype=old_gt_mask.dtype) if old_gt_mask is not None else None
 
         is_high_sum_crop = np.random.rand(1) <= self.prob
         if is_high_sum_crop:
@@ -117,10 +122,14 @@ class HighSumCrop3D(nn.Module):
 
             out_vol[b] = volume[b, bz:bz+sd, by:by+sh, bx:bx+sw]
             out_msk[b] = gt_mask[b, bz:bz+sd, by:by+sh, bx:bx+sw]
+            if out_old_msk is not None:
+                out_old_msk[b] = old_gt_mask[b, bz:bz+sd, by:by+sh, bx:bx+sw]
             if out_skel is not None:
                 out_skel[b] = gt_skel[b, bz:bz+sd, by:by+sh, bx:bx+sw]
 
         result = {"volume": out_vol, "gt_mask": out_msk}
         if out_skel is not None:
             result["gt_skel"] = out_skel
+        if out_old_msk is not None:
+            result["old_gt_mask"] = out_old_msk
         return result

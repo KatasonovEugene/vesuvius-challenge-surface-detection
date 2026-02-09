@@ -17,7 +17,7 @@ class DiceLoss(nn.Module):
             self.ignore_class_ids = [self.ignore_class_ids]
         self.eps = eps
 
-    def forward(self, probs: torch.Tensor, gt_mask: torch.Tensor, **batch):
+    def forward(self, probs: torch.Tensor, gt_mask: torch.Tensor, weights=None, **batch):
         gt_mask = gt_mask.long()
         valid_mask = torch.ones_like(gt_mask, dtype=torch.bool)
         for ignore_id in self.ignore_class_ids:
@@ -34,12 +34,12 @@ class DiceLoss(nn.Module):
         spatial_dims = list(range(2, probs.ndim))
         reduction_dims = [0] + spatial_dims
 
-        valid_mask = valid_mask.unsqueeze(1)
-        probs = probs * valid_mask
-        target = target * valid_mask
+        valid_mask = valid_mask.unsqueeze(1).float()
+        if weights is not None:
+            valid_mask = weights.unsqueeze(1) * valid_mask
 
-        intersection = torch.sum(probs * target, dim=reduction_dims)
-        union = torch.sum(probs + target, dim=reduction_dims)
+        intersection = torch.sum(probs * target * valid_mask, dim=reduction_dims)
+        union = torch.sum((probs + target) * valid_mask, dim=reduction_dims)
 
         dice_score = (2.0 * intersection + self.eps) / (union + self.eps)
         dice_loss = 1.0 - dice_score.mean()
