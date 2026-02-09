@@ -46,7 +46,7 @@ class SlidingWindowWrapper(nn.Module):
                 if self.is_ensemble:
                     return {'probs': preds, 'outputs': None}
                 else:
-                    return {'logits': preds, 'outputs': None}
+                    return {'logits': preds[:, :2], "vector_logits": preds[:, 2:], "full_logits": None, "full_vector_logits": None}
 
     def state_dict(self, *args, **kwargs):
         return self.model.state_dict(*args, **kwargs)
