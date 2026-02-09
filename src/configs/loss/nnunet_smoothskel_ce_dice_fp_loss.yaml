@@ -1,0 +1,15 @@
+_target_: src.loss.nnUnetLoss
+base_loss:
+  _target_: src.loss.BaseLoss
+  num_classes: 2
+  ce_weight: 1.0
+  skel_weight: 0.5
+  dice_weight: 1.0
+  fp_weight: 0.3
+  eps: 1e-7
+  skel_calc_gt_skel: False
+  skel_calc_iterations: 0
+  skel_smooth_mask_skel: True
+  skel_sigma: 0.8
+  skel_warmup_steps: 5000
+ds_weights: null

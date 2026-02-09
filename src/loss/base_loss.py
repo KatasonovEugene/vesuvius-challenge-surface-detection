@@ -32,6 +32,11 @@ class BaseLoss(nn.Module):
         cld_clip_value=1.0,
         tversky_alpha=0.7,
         tversky_beta=0.3,
+        skel_calc_gt_skel=False,
+        skel_calc_iterations=1,
+        skel_smooth_mask_skel=False,
+        skel_sigma=0.8,
+        skel_warmup_steps=0,
     ):
         super().__init__()
         self.num_classes = num_classes
@@ -64,7 +69,14 @@ class BaseLoss(nn.Module):
             ignore_class_ids=2,
             eps=eps,
         )
-        self.skel_loss = SkelLoss(eps=eps)
+        self.skel_loss = SkelLoss(
+            calc_gt_skel=skel_calc_gt_skel,
+            calc_skel_iterations=skel_calc_iterations,
+            smooth_mask_skel=skel_smooth_mask_skel,
+            sigma=skel_sigma,
+            warmup_steps=skel_warmup_steps,
+            eps=eps
+        )
         self.fp_loss = FPLoss(eps=eps)
         self.tversky_loss = TverskyLoss(
             alpha=tversky_alpha,
@@ -98,9 +110,6 @@ class BaseLoss(nn.Module):
             batch['probs'] = torch.softmax(batch['logits'], dim=1)
             assert batch['probs'].shape[1] == self.num_classes
             assert batch['probs'].ndim == 5
-
-        if 'training_steps' in batch:
-            self.update_cld_weight(batch['training_steps'])
 
         loss_results = dict()
         for loss_name, (loss_weight, loss_fn) in self.losses.items():
