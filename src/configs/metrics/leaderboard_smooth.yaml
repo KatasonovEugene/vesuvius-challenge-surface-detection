@@ -4,4 +4,4 @@ inference:
   - _target_: src.metrics.LeaderboardScore
     smooth_sigma: 0.8
     smooth_threshold: 0.5
-    metric_name_suffix: "_smooth"
+    metric_name_prefix: "smooth_"

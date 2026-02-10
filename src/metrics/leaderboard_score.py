@@ -10,7 +10,7 @@ from scipy import ndimage
 import gc
 
 class LeaderboardScore(BaseMetric):
-    def __init__(self, closing_radius=(0,0,0), smooth_sigma=0.0, smooth_threshold=0.5, metric_name_suffix="", *args, **kwargs):
+    def __init__(self, closing_radius=(0,0,0), smooth_sigma=0.0, smooth_threshold=0.5, metric_name_prefix="", *args, **kwargs):
         """
         Calculates Leaderboard Score using kaggle external implementation.
 
@@ -21,7 +21,7 @@ class LeaderboardScore(BaseMetric):
         self.closing_radius = closing_radius
         self.smooth_sigma = smooth_sigma
         self.smooth_threshold = smooth_threshold
-        self.suffix = metric_name_suffix
+        self.prefix = metric_name_prefix
 
     @torch.no_grad()
     def __call__(self, *, outputs: torch.Tensor, gt_mask: torch.Tensor, **kwargs):
@@ -58,6 +58,8 @@ class LeaderboardScore(BaseMetric):
             pr = outputs[sample_idx].detach().cpu().numpy()
             gt = gt_mask[sample_idx].detach().cpu().numpy()
 
+            gt_ignore_mask = (gt == 2)
+
             if self.closing_radius != (0, 0, 0):
                 structure = np.ones(self.closing_radius)
                 gt = (gt == 1)
@@ -67,6 +69,8 @@ class LeaderboardScore(BaseMetric):
                 gt = (gt == 1).astype(np.float32)
                 smoothed_gt = ndimage.gaussian_filter(gt, sigma=self.smooth_sigma)
                 gt = (smoothed_gt > self.smooth_threshold).astype(np.uint8)
+
+            gt[gt_ignore_mask] = 2
 
             torch.cuda.empty_cache()
             gc.collect()
@@ -106,38 +110,38 @@ class LeaderboardScore(BaseMetric):
         topo_aggregate = TopoScore.aggregate_reports(topo_reports, dims=(0, 1, 2), weights=None)
 
         return {
-            self.suffix + 'leaderboard_score': lb_score_average,
-            self.suffix + 'topo_score': topo_score_average,
-            self.suffix + 'surface_dice': surface_dice_average,
-            self.suffix + 'voi_score': voi_score_average,
-            self.suffix + 'voi_split': voi_split_average,
-            self.suffix + 'voi_merge': voi_merge_average,
-            self.suffix + 'betti_number_0_gt': topo_aggregate.counts_by_dim[0][2],
-            self.suffix + 'betti_number_0_pred': topo_aggregate.counts_by_dim[0][1],
-            self.suffix + 'betti_number_0_matched': topo_aggregate.counts_by_dim[0][0],
-            self.suffix + 'betti_number_1_gt': topo_aggregate.counts_by_dim[1][2],
-            self.suffix + 'betti_number_1_pred': topo_aggregate.counts_by_dim[1][1],
-            self.suffix + 'betti_number_1_matched': topo_aggregate.counts_by_dim[1][0],
-            self.suffix + 'betti_number_2_gt': topo_aggregate.counts_by_dim[2][2],
-            self.suffix + 'betti_number_2_pred': topo_aggregate.counts_by_dim[2][1],
-            self.suffix + 'betti_number_2_matched': topo_aggregate.counts_by_dim[2][0],
+            self.prefix + 'leaderboard_score': lb_score_average,
+            self.prefix + 'topo_score': topo_score_average,
+            self.prefix + 'surface_dice': surface_dice_average,
+            self.prefix + 'voi_score': voi_score_average,
+            self.prefix + 'voi_split': voi_split_average,
+            self.prefix + 'voi_merge': voi_merge_average,
+            self.prefix + 'betti_number_0_gt': topo_aggregate.counts_by_dim[0][2],
+            self.prefix + 'betti_number_0_pred': topo_aggregate.counts_by_dim[0][1],
+            self.prefix + 'betti_number_0_matched': topo_aggregate.counts_by_dim[0][0],
+            self.prefix + 'betti_number_1_gt': topo_aggregate.counts_by_dim[1][2],
+            self.prefix + 'betti_number_1_pred': topo_aggregate.counts_by_dim[1][1],
+            self.prefix + 'betti_number_1_matched': topo_aggregate.counts_by_dim[1][0],
+            self.prefix + 'betti_number_2_gt': topo_aggregate.counts_by_dim[2][2],
+            self.prefix + 'betti_number_2_pred': topo_aggregate.counts_by_dim[2][1],
+            self.prefix + 'betti_number_2_matched': topo_aggregate.counts_by_dim[2][0],
         }
 
     def getKeys(self):
         return [
-            self.suffix + 'leaderboard_score',
-            self.suffix + 'topo_score',
-            self.suffix + 'surface_dice',
-            self.suffix + 'voi_score',
-            self.suffix + 'voi_split',
-            self.suffix + 'voi_merge',
-            self.suffix + 'betti_number_0_gt',
-            self.suffix + 'betti_number_0_pred',
-            self.suffix + 'betti_number_0_matched',
-            self.suffix + 'betti_number_1_gt',
-            self.suffix + 'betti_number_1_pred',
-            self.suffix + 'betti_number_1_matched',
-            self.suffix + 'betti_number_2_gt',
-            self.suffix + 'betti_number_2_pred',
-            self.suffix + 'betti_number_2_matched'
+            self.prefix + 'leaderboard_score',
+            self.prefix + 'topo_score',
+            self.prefix + 'surface_dice',
+            self.prefix + 'voi_score',
+            self.prefix + 'voi_split',
+            self.prefix + 'voi_merge',
+            self.prefix + 'betti_number_0_gt',
+            self.prefix + 'betti_number_0_pred',
+            self.prefix + 'betti_number_0_matched',
+            self.prefix + 'betti_number_1_gt',
+            self.prefix + 'betti_number_1_pred',
+            self.prefix + 'betti_number_1_matched',
+            self.prefix + 'betti_number_2_gt',
+            self.prefix + 'betti_number_2_pred',
+            self.prefix + 'betti_number_2_matched'
         ]

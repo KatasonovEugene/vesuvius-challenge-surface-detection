@@ -4,9 +4,9 @@ inference:
   - _target_: src.metrics.LeaderboardScore
     smooth_sigma: 0.8
     smooth_threshold: 0.5
-    metric_name_suffix: "_smooth"
+    metric_name_prefix: "smooth_"
   - _target_: src.metrics.LeaderboardScore
     closing_radius: [3, 3, 3]
-    metric_name_suffix: "_closing"
+    metric_name_prefix: "closing_"
   - _target_: src.metrics.LeaderboardScore
-    metric_name_suffix: "_legacy"
+    metric_name_prefix: "legacy_"
