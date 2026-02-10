@@ -6,6 +6,7 @@ train:
     prefer_skeleton: False
   calc_normal_field:
     _target_: src.transforms.VectorField3D
+    sigma: 1.0
   to_torch:
     _target_: src.transforms.ToTorch # to_torch must be after skeletonize
   scale_intensity:
@@ -31,6 +32,7 @@ train:
 inference:
   calc_normal_field:
     _target_: src.transforms.VectorField3D
+    sigma: 1.0
   to_torch:
     _target_: src.transforms.ToTorch # to_torch must be after skeletonize
   scale_intensity:
