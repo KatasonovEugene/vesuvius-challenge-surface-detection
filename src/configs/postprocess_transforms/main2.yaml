@@ -1,0 +1,9 @@
+outputs:
+  _target_: src.transforms.PostProcess
+  T_low: 0.35
+  T_high: 0.80
+  z_radius: 2
+  xy_radius: 1
+  pre_closing_dust_min_size: 0
+  dust_min_size: 300
+  quantile_threshold: False
