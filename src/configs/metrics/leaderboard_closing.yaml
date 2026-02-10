@@ -1,0 +1,6 @@
+device: "auto"
+train: []
+inference:
+  - _target_: src.metrics.LeaderboardScore
+    closing_radius: [3, 3, 3]
+    metric_name_suffix: "_closing"

@@ -1,0 +1,12 @@
+device: "auto"
+train: []
+inference:
+  - _target_: src.metrics.LeaderboardScore
+    smooth_sigma: 0.8
+    smooth_threshold: 0.5
+    metric_name_suffix: "_smooth"
+  - _target_: src.metrics.LeaderboardScore
+    closing_radius: [3, 3, 3]
+    metric_name_suffix: "_closing"
+  - _target_: src.metrics.LeaderboardScore
+    metric_name_suffix: "_legacy"
