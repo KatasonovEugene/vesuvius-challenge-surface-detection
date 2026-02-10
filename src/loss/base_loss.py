@@ -80,9 +80,8 @@ class BaseLoss(nn.Module):
         probs: [B, C, D, H, W]
         '''
 
-        if 'probs' not in batch.keys():
+        if 'logits' in batch and 'probs' not in batch:
             batch['probs'] = torch.softmax(batch['logits'], dim=1)
-            assert batch['probs'].shape[1] == self.num_classes
             assert batch['probs'].ndim == 5
 
         loss_results = dict()

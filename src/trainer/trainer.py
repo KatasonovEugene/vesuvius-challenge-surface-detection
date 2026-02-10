@@ -85,7 +85,7 @@ class Trainer(BaseTrainer):
         return (colored * 255).astype(np.uint8)
 
     def _log_batch(self, batch_idx, batch, mode="train"):
-        if mode != "train":
+        if mode != "train" and 'logits' in batch:
             indices = np.arange(31, 160, step=32)
             logits = batch['logits'][0]
             prob = torch.softmax(logits, dim=0)[1]
@@ -101,3 +101,5 @@ class Trainer(BaseTrainer):
                 "prob_sagittal_x": [prob[:, :, i] for i in indices],
             }
             self.writer.add_slices(slices)
+        elif mode != 'tarin' and 'vec_preds' in batch:
+            pass

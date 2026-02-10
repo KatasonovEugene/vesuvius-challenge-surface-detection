@@ -11,7 +11,7 @@ class VectorField3D(nn.Module):
         if volume.ndim != 4:
             raise RuntimeError(f'VectorField3D: input shape was not expected; input shape: {volume.shape}; expected shape: [B, D, H, W]')
 
-        dist = distance_transform_edt(1 - gt_skel[0].astype(np.float32))
+        dist = distance_transform_edt(1 - gt_mask[0].astype(np.float32))
         dist_smooth = gaussian_filter(dist, sigma=1.0)
         
         gz, gy, gx = np.gradient(dist_smooth)
@@ -22,11 +22,4 @@ class VectorField3D(nn.Module):
         normals = np.divide(normals, norm, out=np.zeros_like(normals), where=norm > 1e-6)
         normals = normals[np.newaxis, :, :, :]
 
-        result = {
-            'volume': volume,
-            'gt_mask': gt_mask,
-            'gt_skel': gt_skel,
-            'vector': normals
-        }
-
-        return result
+        return {'vector': normals}

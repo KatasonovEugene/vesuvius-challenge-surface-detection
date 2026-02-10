@@ -26,9 +26,7 @@ class SlidingWindowWrapper(nn.Module):
 
     def _predictor(self, volume):
         preds = self.model(volume=volume.squeeze(1))
-        if self.is_ensemble:
-            return preds['probs']
-        return preds['logits']
+        return preds['vec_preds']
 
     def forward(self, **batch):
         if self.training:
@@ -43,10 +41,7 @@ class SlidingWindowWrapper(nn.Module):
                     overlap=self.overlap,
                     mode=self.mode
                 )
-                if self.is_ensemble:
-                    return {'probs': preds, 'outputs': None}
-                else:
-                    return {'logits': preds, 'outputs': None}
+                return {'vec_preds': preds}
 
     def state_dict(self, *args, **kwargs):
         return self.model.state_dict(*args, **kwargs)

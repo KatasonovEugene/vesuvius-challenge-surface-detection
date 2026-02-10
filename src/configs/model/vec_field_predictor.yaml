@@ -1,0 +1,12 @@
+_target_: src.model.SlidingWindowWrapper
+model:
+  _target_: src.model.VecFieldPredictor
+  spatial_dims: 3
+  in_channels: 1
+  out_channels: 3
+  init_filters: 16
+  dropout_prob: 0.2
+roi_size: [160, 160, 160]
+sw_batch_size: 1
+overlap: 0.5
+mode: 'gaussian'

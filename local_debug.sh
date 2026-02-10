@@ -9,6 +9,7 @@ python3 train.py \
     dataloader=debug \
     instance_transforms=debug \
     trainer.n_epochs=1 \
-    trainer.epoch_len=3 \
+    trainer.log_step=1 \
+    trainer.epoch_len=10 \
     'model.roi_size=[64, 64, 64]' \
     $@

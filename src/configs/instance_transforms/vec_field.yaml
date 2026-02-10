@@ -1,0 +1,46 @@
+train:
+  crop:
+    _target_: src.transforms.HighSumCrop3D
+    size: [160, 160, 160]
+    num_candidates: 10
+    prefer_skeleton: False
+  calc_normal_field:
+    _target_: src.transforms.VectorField3D
+  to_torch:
+    _target_: src.transforms.ToTorch # to_torch must be after skeletonize
+  scale_intensity:
+    _target_: src.transforms.ScaleIntensityRange
+    a_min: 0
+    a_max: 255
+    b_min: 0
+    b_max: 1
+    clip: False
+  gamma:
+    _target_: src.transforms.RandomInstanceGammaShift3D
+    prob: 0.5
+    gamma_range: [0.9, 1.1]
+  contrast:
+    _target_: src.transforms.RandomContrast3D
+    prob: 0.5
+    contrast_range: [0.9, 1.1]
+  normalize:
+    _target_: src.transforms.Normalize3D
+    mean: 0.326182128354465
+    std: 0.166721404805906
+
+inference:
+  calc_normal_field:
+    _target_: src.transforms.VectorField3D
+  to_torch:
+    _target_: src.transforms.ToTorch # to_torch must be after skeletonize
+  scale_intensity:
+    _target_: src.transforms.ScaleIntensityRange
+    a_min: 0
+    a_max: 255
+    b_min: 0
+    b_max: 1
+    clip: False
+  normalize:
+    _target_: src.transforms.Normalize3D
+    mean: 0.326182128354465
+    std: 0.166721404805906
