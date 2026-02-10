@@ -15,7 +15,7 @@ trainer:
   log_step: 10
   n_epochs: 50
   epoch_len: 1000
-  device_tensors: ["volume", "gt_mask", "gt_skel"]
+  device_tensors: ["volume", "gt_mask", "gt_skel", "old_gt_mask"]
   use_amp: False
   amp_dtype: "bfloat16"
   max_grad_norm: 5
