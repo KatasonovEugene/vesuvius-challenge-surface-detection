@@ -1,0 +1,19 @@
+device: "auto"
+train:
+  - _target_: src.metrics.VOI
+    threshold: 0.5
+  - _target_: src.metrics.SurfaceDice
+    threshold: 0.5
+  - _target_: src.metrics.SoftDiceMetric
+    num_classes: 2
+  - _target_: src.metrics.HardDiceMetric
+    num_classes: 2
+inference:
+  - _target_: src.metrics.VOI
+    threshold: 0.5
+  - _target_: src.metrics.SurfaceDice
+    threshold: 0.5
+  - _target_: src.metrics.SoftDiceMetric
+    num_classes: 2
+  - _target_: src.metrics.HardDiceMetric
+    num_classes: 2
