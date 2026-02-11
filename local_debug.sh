@@ -6,7 +6,7 @@ python3 train.py \
     datasets.val.override=True \
     datasets.train.val_size=0.5 \
     datasets.val.val_size=0.5 \
-    dataloader=debug \
+    dataloader=local \
     instance_transforms=debug \
     trainer.n_epochs=1 \
     trainer.epoch_len=3 \
