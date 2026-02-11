@@ -1,0 +1,7 @@
+device: "auto"
+train:
+  - _target_: src.metrics.VOI
+    threshold: 0.5
+inference:
+  - _target_: src.metrics.VOI
+    threshold: 0.5
