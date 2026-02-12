@@ -27,14 +27,5 @@ train:
     alpha_x: 10.0
     alpha_y: 10.0
     alpha_z: 5.0
-  cutout3d:
-    _target_: src.transforms.Cutout3D
-    prob: 0.4
-    holes: [2, 5]
-    depth: [4, 12]
-    height: [24, 64]
-    width: [24, 64]
-    volume_fill_mode: "null"
-    mask_fill_mode: "unlabeled"
 
 inference: null

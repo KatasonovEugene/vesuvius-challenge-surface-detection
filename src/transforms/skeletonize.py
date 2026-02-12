@@ -15,9 +15,10 @@ class Skeletonize(nn.Module):
         gt_skel = gt_skel.squeeze(axis=0)
         mask = (gt_skel == 1)
         skel = skeletonize(mask)
-        tubed_skel = binary_dilation(skel, iterations=self.dilation_iterations)
-        tubed_skel = tubed_skel[None]
-        return {"gt_skel": tubed_skel}
+        if self.dilation_iterations > 0:
+            skel = binary_dilation(skel, iterations=self.dilation_iterations)
+        skel = skel[None]
+        return {"gt_skel": skel}
 
 
 class MedialSurface(nn.Module):

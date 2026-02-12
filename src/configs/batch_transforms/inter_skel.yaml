@@ -1,4 +1,8 @@
 train:
+  skel_interpolation:
+    _target_: src.transforms.SkeletonInterpolation
+    scale: 2.0
+    gamma: 0.7
   shift_intensity:
     _target_: src.transforms.RandShiftIntensity3D
     offsets: 0.10
@@ -28,4 +32,8 @@ train:
     alpha_y: 10.0
     alpha_z: 5.0
 
-inference: null
+inference:
+  skel_interpolation:
+    _target_: src.transforms.SkeletonInterpolation
+    scale: 2.0
+    gamma: 0.7
