@@ -10,19 +10,61 @@ from pathlib import Path
 from src.utils.io_utils import ROOT_PATH
 
 def view3d(volume, gt_mask, gt_skel, outputs=None, sample_idx=0, **batch):
-    volume = volume.cpu().numpy()
-    gt_mask = gt_mask.cpu().numpy()
-    gt_skel = gt_skel.cpu().numpy()
+    volume = volume[sample_idx].cpu().numpy()
+    gt_mask = gt_mask[sample_idx].cpu().numpy()
+    gt_skel = gt_skel[sample_idx].cpu().numpy()
     if outputs is not None:
-        outputs = outputs.cpu().numpy()
+        outputs = outputs[sample_idx].cpu().numpy()
+
+    z_gradient = np.linspace(0, 1, volume.shape[0])[:, None, None]
+    gt_skel = gt_skel.astype(float) * z_gradient
+    if outputs is not None:
+        outputs = outputs.astype(float) * z_gradient
+    ignore = (gt_mask == 2)
+    gt_mask[ignore] = 0
+    gt_mask = gt_mask.astype(float) * z_gradient
 
     viewer = napari.Viewer()
-    viewer.add_image(gt_skel[sample_idx], name='GT Skeleton')
-    viewer.add_image(gt_mask[sample_idx], name='GT Mask')
-    viewer.add_image(volume[sample_idx], name='Volume')
+    viewer.theme = 'light'
+
+    viewer.add_image(
+        gt_skel,
+        name='GT Skeleton',
+        colormap='magma',
+        rendering='attenuated_mip',
+        attenuation=0.5,
+        interpolation3d='nearest',
+        interpolation2d='nearest',
+        contrast_limits=[0, 1]
+    )
+    viewer.add_image(
+        gt_mask,
+        name='GT Mask',
+        colormap='magma',
+        rendering='attenuated_mip',
+        attenuation=0.5,
+        interpolation3d='nearest',
+        interpolation2d='nearest',
+        contrast_limits=[0, 1]
+    )
+    viewer.add_image(volume, name='Volume')
     if outputs is not None:
-        viewer.add_image(outputs[sample_idx], name='Outputs')
+        viewer.add_image(
+            outputs,
+            name='Outputs',
+            colormap='magma',
+            rendering='attenuated_mip',
+            attenuation=0.5,
+            contrast_limits=[0, 1]
+        )
+
+    # verts, faces, normals, values = measure.marching_cubes(gt_skel, level=0.5) # tune level?
+    # viewer.add_surface((verts, faces), name='Gt Skeleton Mesh', shading='smooth')
+
     viewer.dims.ndisplay = 3
+    viewer.scale_bar.visible = True
+    viewer.scale_bar.unit = 'um'
+
     napari.run()
 
 def view_batch_3d(volume, gt_mask, gt_skel, outputs=None, **batch):

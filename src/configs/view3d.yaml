@@ -1,0 +1,19 @@
+defaults:
+  - model: nnunet
+  - metrics: empty
+  - datasets: only_val
+  - dataloader: default
+  - batch_transforms: main
+  - instance_transforms: main
+  - postprocess_transforms: empty
+  - tta_transforms: empty
+  - _self_
+inferencer:
+  device_tensors: ["volume", "gt_mask", "gt_skel"]
+  device: auto
+  seed: 1
+  use_amp: False
+  amp_dtype: "bfloat16"
+  from_pretrained: "models/nnunet-elastic.pth"
+  plot_results: False
+  view_3d_online: True
