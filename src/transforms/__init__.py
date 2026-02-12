@@ -19,3 +19,4 @@ from src.transforms.skeletonize_diff_hard import SkeletonizeDiffHard, Skeletoniz
 from src.transforms.mask_preprocess import GtMaskSmooth, GtMaskSmoothNoThreshold, GtMaskClosing
 from src.transforms.morphology import RandProbsErosionDilation
 from src.transforms.blur import RandProbsBlur
+from src.transforms.uncertainty import RandProbsUncertainty

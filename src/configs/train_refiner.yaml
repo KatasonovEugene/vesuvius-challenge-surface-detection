@@ -7,6 +7,7 @@ defaults:
   - dataloader: default
   - batch_transforms: refine
   - instance_transforms: refine
+  - probs_transforms: refine
   - loss: ce_dice_fp_skel_loss
   - optimizer: adamw
   - lr_scheduler: warmup_cosine

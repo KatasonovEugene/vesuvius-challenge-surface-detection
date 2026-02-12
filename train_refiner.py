@@ -40,6 +40,8 @@ def main(config):
     model = instantiate(config.model).to(device)
     assert hasattr(model, "get_inner_model")
 
+    probs_transforms = instantiate(config.probs_transforms)
+
     teacher_model = instantiate(config.teacher_model).to(device)
     assert hasattr(teacher_model, "get_inner_model")
 
@@ -70,6 +72,7 @@ def main(config):
         logger=logger,
         writer=writer,
         batch_transforms=batch_transforms,
+        probs_transforms=probs_transforms,
         skip_oom=config.trainer.get("skip_oom", True),
         log_batch_plots=config.trainer.get("log_batch_plots", False),
         view_3d_online=config.trainer.get("view_3d_online", False),

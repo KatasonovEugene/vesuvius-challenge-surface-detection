@@ -7,7 +7,7 @@ import matplotlib.cm as cm
 
 
 class RefinerTrainer(BaseTrainer):
-    def __init__(self, *args, teacher_model, log_batch_plots=False, view_3d_online=False, **kwargs):
+    def __init__(self, *args, teacher_model, probs_transforms=None, log_batch_plots=False, view_3d_online=False, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.teacher_model = teacher_model
@@ -20,6 +20,7 @@ class RefinerTrainer(BaseTrainer):
 
         self.log_batch_plots = log_batch_plots
         self.view_3d_online = view_3d_online
+        self.probs_transforms = probs_transforms
         self.training_steps = 0
 
 
@@ -30,6 +31,15 @@ class RefinerTrainer(BaseTrainer):
     def _unfroze_teacher(self):
         for param in self.teacher_trainable_params:
             param.requires_grad = True
+
+    def apply_probs_transforms(self, batch):
+        transform_type = "train" if self.is_train else "inference"
+        transforms = self.probs_transforms.get(transform_type) if self.probs_transforms else None
+        if transforms is not None:
+            for transform_name in transforms.keys():
+                transform_result = transforms[transform_name](**batch)
+                batch.update(transform_result)
+        return batch
 
     def process_batch(self, batch, metrics: MetricTracker):
         batch = self.move_batch_to_device(batch)
@@ -44,6 +54,8 @@ class RefinerTrainer(BaseTrainer):
             with torch.no_grad():
                 teacher_outputs = self.teacher_model(**batch)
                 batch['teacher_probs'] = torch.softmax(teacher_outputs['logits'], dim=1)[:, 1]
+                batch = self.apply_probs_transforms(batch)
+
             outputs = self.model(**batch)
             batch.update(outputs)
             all_losses = self.criterion(training_steps=self.training_steps, **batch)

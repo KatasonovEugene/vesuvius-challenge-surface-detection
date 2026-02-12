@@ -1,0 +1,21 @@
+train:
+  noise:
+    _target_: src.transforms.RandAddProbsNoise
+    prob: 0.5
+    sigma: 0.05
+  blur:
+    _target_: src.transforms.RandProbsBlur
+    prob: 0.5
+    sigma: 0.6
+  morphology:
+    _target_: src.transforms.RandProbsErosionDilation
+    prob: 0.5
+    threshold_range: [0.45, 0.55]
+    radius: 1
+    koef: 0.3
+  uncertainty:
+    _target_: src.transforms.RandProbsUncertainty
+    voxel_prob: 0.02
+    koef: 0.5
+
+inference: null
