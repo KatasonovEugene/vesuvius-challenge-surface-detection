@@ -7,7 +7,7 @@ class VecFieldPredictor(nn.Module):
         self,
         spatial_dims=3,
         in_channels=1,
-        out_channels=2,
+        out_channels=3,
         init_filters=16,
         dropout_prob=0.2,
         act_name="tanh",
