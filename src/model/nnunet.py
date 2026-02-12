@@ -23,7 +23,7 @@ class nnUNetDetector(nn.Module):
             upsample_kernel_size=strides[1:],
             filters=features_per_stage,
             res_block=True,
-            deep_supervision=True,
+            deep_supervision=(deep_supr_num > 0),
             deep_supr_num=deep_supr_num,
         )
 
