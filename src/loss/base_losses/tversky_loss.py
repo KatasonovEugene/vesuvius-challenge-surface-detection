@@ -11,7 +11,11 @@ class TverskyLoss(nn.Module):
         self.eps = eps
 
     def forward(self, probs, gt_mask, **batch):
-        probs = probs[:, 1]
+        if probs.shape[1] == 1:
+            probs = probs[:, 0]
+        else:
+            probs = probs[:, 1]
+
         valid_mask = (gt_mask != 2).float()
         gt_positive = (gt_mask == 1).float()
         gt_negative = (gt_mask == 0).float()

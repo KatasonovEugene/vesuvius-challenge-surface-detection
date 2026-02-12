@@ -41,7 +41,7 @@ class BaseLoss(nn.Module):
         super().__init__()
         self.num_classes = num_classes
 
-        self.ce_loss = CELoss(ignore_class_ids=2) 
+        self.ce_loss = CELoss(num_classes=num_classes, ignore_class_ids=2) 
 
         if cld_max_weight == 0.0:
             cld_max_weight = cld_weight
@@ -108,8 +108,9 @@ class BaseLoss(nn.Module):
 
         if 'probs' not in batch.keys():
             batch['probs'] = torch.softmax(batch['logits'], dim=1)
-            assert batch['probs'].shape[1] == self.num_classes
-            assert batch['probs'].ndim == 5
+
+        assert batch['probs'].ndim == 5
+        assert batch['probs'].shape[1] == self.num_classes or batch['probs'].shape[1] == 1 and self.num_classes == 2, f"Expected probs with {self.num_classes} channels, got {batch['probs'].shape}"
 
         loss_results = dict()
         for loss_name, (loss_weight, loss_fn) in self.losses.items():

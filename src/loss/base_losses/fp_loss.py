@@ -8,7 +8,11 @@ class FPLoss(nn.Module):
         self.eps = eps
 
     def forward(self, probs: torch.Tensor, gt_mask: torch.Tensor, **batch):
-        probs = probs[:, 1]
+        if probs.shape[1] == 1:
+            probs = probs[:, 0]
+        else:
+            probs = probs[:, 1]
+
         valid_mask = (gt_mask != 2).float()
         gt_bg = (gt_mask == 0).float()
         fp_volume = probs * gt_bg * valid_mask

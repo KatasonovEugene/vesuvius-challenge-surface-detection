@@ -43,12 +43,9 @@ class RefinerTrainer(BaseTrainer):
         with self._autocast_context():
             with torch.no_grad():
                 teacher_outputs = self.teacher_model(**batch)
-                batch['probs'] = torch.softmax(teacher_outputs['logits'], dim=1)[:, 1]
+                batch['teacher_probs'] = torch.softmax(teacher_outputs['logits'], dim=1)[:, 1]
             outputs = self.model(**batch)
-            # batch['teacher_probs'] = batch['probs']
             batch.update(outputs)
-            batch['probs'] = torch.cat([1 - batch['probs'], batch['probs']], dim=1)
-            batch['logits'] = torch.logit(batch['probs'].clamp(1e-4, 1-1e-4))
             all_losses = self.criterion(training_steps=self.training_steps, **batch)
         batch.update(all_losses)
 

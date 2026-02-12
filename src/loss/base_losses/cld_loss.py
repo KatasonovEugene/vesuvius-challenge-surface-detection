@@ -78,8 +78,11 @@ class ClDiceLoss(nn.Module):
             return self.skeletonize_pred(volume)['pred_skel']
 
     def forward(self, probs, gt_mask, gt_skel, training_steps=None, **batch):
-        dims = (1, 2, 3) 
-        probs = probs[:, 1]
+        dims = (1, 2, 3)
+        if probs.shape[1] == 1:
+            probs = probs[:, 0]
+        else:
+            probs = probs[:, 1]
         valid_mask = (gt_mask != 2).float()
 
         if self.use_downsampling:

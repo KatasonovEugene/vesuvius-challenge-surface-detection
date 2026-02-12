@@ -33,7 +33,11 @@ class SkelLoss(nn.Module):
 
     def forward(self, probs: torch.Tensor, gt_mask: torch.Tensor, gt_skel: torch.Tensor, training_steps=None, **batch):
         dims = (1, 2, 3) 
-        pred_prob = probs[:, 1]
+        if probs.shape[1] == 1:
+            pred_prob = probs[:, 0]
+        else:
+            pred_prob = probs[:, 1]
+
         valid_mask = (gt_mask != 2).float()
 
         if self.calc_gt_skel:
