@@ -38,12 +38,12 @@ class RandProbsErosionDilation(nn.Module):
 
         apply_transform = torch.bernoulli(
             torch.full(size=(teacher_probs.shape[0],), fill_value=self.prob, device=teacher_probs.device)
-        ).to(dtype=teacher_probs.dtype, device=teacher_probs.device).view(-1, 1, 1, 1)
+        ).to(dtype=teacher_probs.dtype).view(-1, 1, 1, 1)
 
         if apply_transform.sum() == 0:
             return {'teacher_probs': teacher_probs}
 
-        types = apply_transform * torch.randint(0, 2, size=(teacher_probs.shape[0], 1, 1, 1), device=teacher_probs.device)
+        types = torch.randint(0, 2, size=(teacher_probs.shape[0], 1, 1, 1), device=teacher_probs.device)
 
         threshold = torch.empty(size=(teacher_probs.shape[0],), dtype=teacher_probs.dtype, device=teacher_probs.device).uniform_(*self.threshold_range)
         thresholded = teacher_probs > threshold.view(-1, 1, 1, 1)
@@ -55,6 +55,6 @@ class RandProbsErosionDilation(nn.Module):
 
         difference = united_morphology - thresholded
 
-        teacher_probs = torch.clamp(teacher_probs + self.koef * difference, 0.0, 1.0)
+        teacher_probs = torch.clamp(teacher_probs + apply_transform * self.koef * difference, 0.0, 1.0)
 
         return {'teacher_probs': teacher_probs}

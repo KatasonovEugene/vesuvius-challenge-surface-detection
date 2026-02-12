@@ -23,7 +23,7 @@ class DiceLoss(nn.Module):
 
         valid_mask = torch.ones_like(gt_mask, dtype=torch.bool)
         for ignore_id in self.ignore_class_ids:
-            valid_mask &= (gt_mask != ignore_id)
+            valid_mask &= (gt_mask != ignore_id).bool()
 
         if self.num_classes == 2:
             if probs.shape[1] == 2:

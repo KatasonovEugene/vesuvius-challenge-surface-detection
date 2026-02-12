@@ -26,8 +26,9 @@ class CELoss(nn.Module):
             else:
                 raise ValueError(f"Binary CE expects probs with 1 or 2 channels, got {probs.shape}")
 
-            ce_loss = F.binary_cross_entropy(probs, gt_mask.float(), reduction='none')
             valid_mask = (gt_mask != self.ce_ignore_index)
+            safe_gt = torch.where(valid_mask, gt_mask, torch.zeros_like(gt_mask)).float()
+            ce_loss = F.binary_cross_entropy(probs, safe_gt, reduction='none')
             ce_loss = (ce_loss * valid_mask).sum() / valid_mask.sum().clamp(min=1.0)
         else:
             assert logits is not None, "Logits must be provided for multi-class CE loss"

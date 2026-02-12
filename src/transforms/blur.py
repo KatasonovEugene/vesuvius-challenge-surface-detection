@@ -31,11 +31,11 @@ class RandProbsBlur(nn.Module):
 
         apply_transform = torch.bernoulli(
             torch.full(size=(teacher_probs.shape[0],), fill_value=self.prob, device=teacher_probs.device)
-        ).to(dtype=teacher_probs.dtype, device=teacher_probs.device).view(-1, 1, 1, 1)
+        ).bool().view(-1, 1, 1, 1)
 
         if apply_transform.sum() == 0:
             return {'teacher_probs': teacher_probs}
 
-        teacher_probs = torch.where(apply_transform, gaussian_blur_batch_3d(teacher_probs, sigma=self.sigma), teacher_probs)
+        teacher_probs = torch.where(apply_transform, torch.clamp(gaussian_blur_batch_3d(teacher_probs, sigma=self.sigma), 0.0, 1.0), teacher_probs)
 
         return {'teacher_probs': teacher_probs}

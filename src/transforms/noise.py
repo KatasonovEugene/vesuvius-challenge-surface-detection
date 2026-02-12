@@ -106,6 +106,6 @@ class RandAddProbsNoise(nn.Module):
         noise = torch.randn_like(teacher_probs)
         noise = noise * self.sigma
 
-        teacher_probs = teacher_probs + apply_transform * noise
+        teacher_probs = torch.clamp(teacher_probs + apply_transform * noise, 0.0, 1.0)
 
         return {'teacher_probs': teacher_probs}

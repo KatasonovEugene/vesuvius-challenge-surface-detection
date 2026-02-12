@@ -13,27 +13,27 @@ class SoftDiceMetric(BaseMetric):
         self.smooth = smooth
 
     @torch.no_grad()
-    def __call__(self, *, logits: torch.Tensor, gt_mask: torch.Tensor, **kwargs):
+    def __call__(self, *, gt_mask, logits=None, probs=None, **kwargs):
         """
         Expected logits shape: [B, C, D, H, W]
-
+        Expected probs shape: [B, C, D, H, W] or [B, 1, D, H, W] (binary, class-1 prob)
         Expected gt_mask shape: [B, D, H, W]
-
-        Args:
-            logits (Tensor): model output logits.
-            gt_mask (Tensor): ground-truth mask.
-        Returns:
-            metric (float): calculated metric.
         """
 
-        logits = torch.softmax(logits, dim=1) # logits -> probs
+        if probs is None:
+            probs = torch.softmax(logits, dim=1)
+        elif probs.shape[1] == 1 and self.num_classes != 2:
+            raise ValueError("Single-channel probs requires num_classes=2")
 
         dice_scores = []
         for clas in range(self.num_classes):
             if clas == self.ignore_class_id:
                 continue
 
-            y_pred_cls = logits[:, clas]
+            if probs.shape[1] == 1:
+                y_pred_cls = probs[:, 0] if clas == 1 else (1.0 - probs[:, 0])
+            else:
+                y_pred_cls = probs[:, clas]
             y_true_cls = (gt_mask == clas).float()
 
             intersection = torch.sum(y_true_cls * y_pred_cls, dim=list(range(1, y_true_cls.ndim)))
@@ -58,20 +58,21 @@ class HardDiceMetric(BaseMetric):
         self.smooth = smooth
 
     @torch.no_grad()
-    def __call__(self, *, logits: torch.Tensor, gt_mask: torch.Tensor, **kwargs):
+    def __call__(self, *, gt_mask, logits=None, probs=None, **kwargs):
         """
         Expected logits shape: [B, C, D, H, W]
-
+        Expected probs shape: [B, C, D, H, W] or [B, 1, D, H, W] (binary, class-1 prob)
         Expected gt_mask shape: [B, D, H, W]
-
-        Args:
-            logits (Tensor): model output logits.
-            gt_mask (Tensor): ground-truth mask.
-        Returns:
-            metric (float): calculated metric.
         """
+        if probs is None:
+            probs = torch.softmax(logits, dim=1)  # logits -> probs
+        elif probs.shape[1] == 1 and self.num_classes != 2:
+            raise ValueError("Single-channel probs requires num_classes=2")
 
-        logits = torch.argmax(logits, dim=1) # logits -> pred
+        if probs.shape[1] == 1:
+            logits = (probs[:, 0] >= 0.5).long()
+        else:
+            logits = torch.argmax(probs, dim=1)
 
         dice_scores = []
         for clas in range(self.num_classes):
