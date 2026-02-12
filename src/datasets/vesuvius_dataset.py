@@ -125,6 +125,12 @@ class VesuviusDataset(BaseDataset):
                 else:
                     target = pseudotarget
 
+            if 'teacher_probs_path' in item:
+                teacher_probs = self.load_object(item['teacher_probs_path'], np.float32)
+                instance_data.update({
+                    'teacher_probs': teacher_probs,
+                })
+
             instance_data.update({
                 'gt_mask': target,
                 'gt_skel': target,
