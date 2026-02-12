@@ -12,6 +12,7 @@ class RefinerTrainer(BaseTrainer):
 
         self.teacher_model = teacher_model
         self._load_one_pretrained(self.config.trainer.get("teacher_weights_path"), self.teacher_model)
+        self.teacher_model.eval()
 
         self.teacher_trainable_params = filter(lambda p: p.requires_grad, self.teacher_model.parameters())
 
@@ -40,8 +41,9 @@ class RefinerTrainer(BaseTrainer):
             self.optimizer.zero_grad()
 
         with self._autocast_context():
-            teacher_outputs = self.teacher_model(**batch)
-            batch['probs'] = torch.softmax(teacher_outputs['logits'], dim=1)[:, 1]
+            with torch.no_grad():
+                teacher_outputs = self.teacher_model(**batch)
+                batch['probs'] = torch.softmax(teacher_outputs['logits'], dim=1)[:, 1]
             outputs = self.model(**batch)
             # batch['teacher_probs'] = batch['probs']
             batch.update(outputs)
@@ -86,8 +88,13 @@ class RefinerTrainer(BaseTrainer):
             metric_result = met(**batch)
             if isinstance(metric_result, dict):
                 for key in metric_result.keys():
-                    metrics.update(met.name + '_' + key, metric_result[key])
+                    value = metric_result[key]
+                    if isinstance(value, torch.Tensor):
+                        value = value.item()
+                    metrics.update(met.name + '_' + key, value)
             else:
+                if isinstance(metric_result, torch.Tensor):
+                    metric_result = metric_result.item()
                 metrics.update(met.name, metric_result)
 
         return batch

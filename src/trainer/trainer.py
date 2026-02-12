@@ -64,8 +64,13 @@ class Trainer(BaseTrainer):
             metric_result = met(**batch)
             if isinstance(metric_result, dict):
                 for key in metric_result.keys():
-                    metrics.update(met.name + '_' + key, metric_result[key])
+                    value = metric_result[key]
+                    if isinstance(value, torch.Tensor):
+                        value = value.item()
+                    metrics.update(met.name + '_' + key, value)
             else:
+                if isinstance(metric_result, torch.Tensor):
+                    metric_result = metric_result.item()
                 metrics.update(met.name, metric_result)
 
         return batch
