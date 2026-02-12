@@ -53,7 +53,7 @@ class RandProbsErosionDilation(nn.Module):
 
         united_morphology = torch.where(types == 0, eroded, dilated)
 
-        difference = united_morphology - thresholded
+        difference = united_morphology - thresholded.float()
 
         teacher_probs = torch.clamp(teacher_probs + apply_transform * self.koef * difference, 0.0, 1.0)
 
