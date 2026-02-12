@@ -22,7 +22,7 @@ trainer:
   max_grad_norm: 5
   resume_from: null
   from_pretrained: null
-  teacher_weights_path: 'models/nnunet-elastic.pth'
+  teacher_weights_path: 'models/pseudotarget07.pth'
   device: auto
   override: False
   monitor: "min val_loss"

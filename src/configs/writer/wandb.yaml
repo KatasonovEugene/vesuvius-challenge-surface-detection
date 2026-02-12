@@ -1,7 +1,7 @@
 _target_: src.logger.WandBWriter
 project_name: "vesuvius-challenge-surface-detection"
 entity: "TKNP"
-run_name: "cutout3d_elastic_deformation"
+run_name: "nnunet_refiner"
 mode: "offline"
 log_checkpoints: False
 id_length: 8
