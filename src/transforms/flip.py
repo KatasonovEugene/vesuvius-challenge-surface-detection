@@ -22,16 +22,18 @@ class RandFlip3D(nn.Module):
         self.prob = min(1.0, max(0.0, prob))
         self.spatial_axis = spatial_axis
 
-    def forward(self, volume, gt_mask, gt_skel, **batch):
+    def forward(self, volume, gt_mask, gt_skel, teacher_probs=None, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
             gt_mask (Tensor): ground truth mask tensor.
             gt_skel (Tensor): ground truth skeleton tensor.
+            teacher_probs (Tensor or None): teacher probabilities tensor.
         Returns:
             volume (Tensor): randomly flipped volume tensor.
             gt_mask (Tensor): randomly flipped ground truth mask tensor.
             gt_skel (Tensor): randomly flipped ground truth skeleton tensor.
+            teacher_probs (Tensor or None): randomly flipped teacher probabilities tensor.
         """
 
         if volume.dim() != 4:
@@ -45,7 +47,10 @@ class RandFlip3D(nn.Module):
         volume = torch.where(apply_transform, flip(volume), volume)
         gt_mask = torch.where(apply_transform, flip(gt_mask), gt_mask)
         gt_skel = torch.where(apply_transform, flip(gt_skel), gt_skel)
+        teacher_probs = torch.where(apply_transform, flip(teacher_probs), teacher_probs) if teacher_probs is not None else None
 
+        if teacher_probs is not None:
+            return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel, 'teacher_probs': teacher_probs}
         return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel}
 
 
@@ -65,16 +70,18 @@ class Flip3D(BaseTTATransform):
 
         self.spatial_axis = spatial_axis
 
-    def forward(self, *, volume, gt_mask=None, gt_skel=None, **batch):
+    def forward(self, *, volume, gt_mask=None, gt_skel=None, teacher_probs=None, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
             gt_mask (None or Tensor): ground truth mask tensor.
             gt_skel (None or Tensor): ground truth skeleton tensor.
+            teacher_probs (None or Tensor): teacher probabilities tensor.
         Returns:
             volume (Tensor): randomly flipped volume tensor.
             gt_mask (None or Tensor): randomly flipped ground truth mask tensor.
             gt_skel (None or Tensor): randomly flipped ground truth skeleton tensor.
+            teacher_probs (None or Tensor): randomly flipped teacher probabilities tensor.
         """
 
         if volume.dim() != 4:
@@ -85,26 +92,32 @@ class Flip3D(BaseTTATransform):
             gt_mask = torch.flip(gt_mask, dims=[self.spatial_axis + 1])
         if gt_skel is not None:
             gt_skel = torch.flip(gt_skel, dims=[self.spatial_axis + 1])
+        if teacher_probs is not None:
+            teacher_probs = torch.flip(teacher_probs, dims=[self.spatial_axis + 1])
 
         result = {'volume': volume}
         if gt_mask is not None:
             result['gt_mask'] = gt_mask
         if gt_skel is not None:
             result['gt_skel'] = gt_skel
+        if teacher_probs is not None:
+            result['teacher_probs'] = teacher_probs
 
         return result
 
 
-    def detransform(self, gt_mask=None, gt_skel=None, **batch):
+    def detransform(self, gt_mask=None, gt_skel=None, teacher_probs=None, **batch):
         """
         Args:
             logits (Tensor): rotated logits tensor.
             gt_mask (None or Tensor): rotated ground truth mask tensor.
             gt_skel (None or Tensor): rotated ground truth skeleton tensor.
+            teacher_probs (None or Tensor): rotated teacher probabilities tensor.
         Returns:
             logits (Tensor): derotated logits tensor.
             gt_mask (None or Tensor): derotated ground truth mask tensor.
             gt_skel (None or Tensor): derotated ground truth skeleton tensor.
+            teacher_probs (None or Tensor): derotated teacher probabilities tensor.
         """
 
         if 'probs' in batch:
@@ -120,6 +133,8 @@ class Flip3D(BaseTTATransform):
             gt_mask = torch.flip(gt_mask, dims=[self.spatial_axis + 1])
         if gt_skel is not None:
             gt_skel = torch.flip(gt_skel, dims=[self.spatial_axis + 1])
+        if teacher_probs is not None:
+            teacher_probs = torch.flip(teacher_probs, dims=[self.spatial_axis + 1])
 
         if 'probs' in batch:
             result = {'probs': preds}
@@ -130,5 +145,7 @@ class Flip3D(BaseTTATransform):
             result['gt_mask'] = gt_mask
         if gt_skel is not None:
             result['gt_skel'] = gt_skel
+        if teacher_probs is not None:
+            result['teacher_probs'] = teacher_probs
 
         return result

@@ -34,16 +34,18 @@ class RandRotate90_3D(nn.Module):
     def rotate90(self, data):
         return torch.rot90(data, k=1, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
 
-    def forward(self, volume, gt_mask, gt_skel, **batch):
+    def forward(self, volume, gt_mask, gt_skel, teacher_probs=None, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
             gt_mask (Tensor): ground truth mask tensor.
             gt_skel (Tensor): ground truth skeleton tensor.
+            teacher_probs (Tensor or None): teacher probabilities tensor.
         Returns:
             volume (Tensor): randomly rotated volume tensor.
             gt_mask (Tensor): randomly rotated ground truth mask tensor.
             gt_skel (Tensor): randomly rotated ground truth skeleton tensor.
+            teacher_probs (Tensor or None): randomly rotated teacher probabilities tensor.
         """
 
         if volume.dim() != 4:
@@ -62,7 +64,10 @@ class RandRotate90_3D(nn.Module):
             volume = torch.where(apply, self.rotate90(volume), volume)
             gt_mask = torch.where(apply, self.rotate90(gt_mask), gt_mask)
             gt_skel = torch.where(apply, self.rotate90(gt_skel), gt_skel)
+            teacher_probs = torch.where(apply, self.rotate90(teacher_probs), teacher_probs) if teacher_probs is not None else None
 
+        if teacher_probs is not None:
+            return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel, 'teacher_probs': teacher_probs}
         return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel}
 
 
@@ -92,16 +97,18 @@ class Rotate90_3D(BaseTTATransform):
         self.k = k
         self.spatial_axes = spatial_axes
 
-    def forward(self, *, volume, gt_mask=None, gt_skel=None, **batch):
+    def forward(self, *, volume, gt_mask=None, gt_skel=None, teacher_probs=None, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
             gt_mask (None or Tensor): ground truth mask tensor.
             gt_skel (None or Tensor): ground truth skeleton tensor.
+            teacher_probs (None or Tensor): teacher probabilities tensor.
         Returns:
             volume (Tensor): rotated volume tensor.
             gt_mask (None or Tensor): rotated ground truth mask tensor.
             gt_skel (None or Tensor): rotated ground truth skeleton tensor.
+            teacher_probs (None or Tensor): rotated teacher probabilities tensor.
         """
 
         if volume.dim() != 4:
@@ -112,25 +119,31 @@ class Rotate90_3D(BaseTTATransform):
             gt_mask = torch.rot90(gt_mask, k=self.k, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
         if gt_skel is not None:
             gt_skel = torch.rot90(gt_skel, k=self.k, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
+        if teacher_probs is not None:
+            teacher_probs = torch.rot90(teacher_probs, k=self.k, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
 
         result = {'volume': volume}
         if gt_mask is not None:
             result['gt_mask'] = gt_mask
         if gt_skel is not None:
             result['gt_skel'] = gt_skel
+        if teacher_probs is not None:
+            result['teacher_probs'] = teacher_probs
 
         return result
 
-    def detransform(self, gt_mask=None, gt_skel=None, **batch):
+    def detransform(self, gt_mask=None, gt_skel=None, teacher_probs=None, **batch):
         """
         Args:
             logits (Tensor): rotated logits tensor.
             gt_mask (None or Tensor): rotated ground truth mask tensor.
             gt_skel (None or Tensor): rotated ground truth skeleton tensor.
+            teacher_probs (None or Tensor): rotated teacher probabilities tensor.
         Returns:
             logits (Tensor): derotated logits tensor.
             gt_mask (None or Tensor): derotated ground truth mask tensor.
             gt_skel (None or Tensor): derotated ground truth skeleton tensor.
+            teacher_probs (None or Tensor): derotated teacher probabilities tensor.
         """
 
         if 'probs' in batch:
@@ -146,6 +159,8 @@ class Rotate90_3D(BaseTTATransform):
             gt_mask = torch.rot90(gt_mask, k=-self.k, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
         if gt_skel is not None:
             gt_skel = torch.rot90(gt_skel, k=-self.k, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
+        if teacher_probs is not None:
+            teacher_probs = torch.rot90(teacher_probs, k=-self.k, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
 
         if 'probs' in batch:
             result = {'probs': preds}
@@ -156,6 +171,8 @@ class Rotate90_3D(BaseTTATransform):
             result['gt_mask'] = gt_mask
         if gt_skel is not None:
             result['gt_skel'] = gt_skel
+        if teacher_probs is not None:
+            result['teacher_probs'] = teacher_probs
 
         return result
 

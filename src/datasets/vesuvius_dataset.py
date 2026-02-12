@@ -17,6 +17,7 @@ class VesuviusDataset(BaseDataset):
         override=False,
         images_path=None,
         pseudotarget_path=None,
+        teacher_probs_path=None,
         mix_target_with_ps=True,
         *args,
         **kwargs,
@@ -24,6 +25,8 @@ class VesuviusDataset(BaseDataset):
         index_name = f"{part}_index.json"
         if pseudotarget_path is not None:
             index_name = "pseudotarget" + index_name
+        if teacher_probs_path is not None:
+            index_name = "teacher" + index_name
 
         self.is_kaggle_env = 'KAGGLE_URL_BASE' in os.environ
         if self.is_kaggle_env:
@@ -40,14 +43,22 @@ class VesuviusDataset(BaseDataset):
             self.data_path = Path('/kaggle/input/vesuvius-challenge-surface-detection')
         else:
             self.data_path = ROOT_PATH / 'data'
+
         if images_path is None:
             self.images_path = None
         else:
             self.images_path = ROOT_PATH / images_path
+
         if pseudotarget_path is None:
             self.pseudotarget_path = None
         else:
             self.pseudotarget_path = ROOT_PATH / pseudotarget_path
+
+        if teacher_probs_path is None:
+            self.teacher_probs_path = None
+        else:
+            self.teacher_probs_path = ROOT_PATH / teacher_probs_path
+
         self.mix_target_with_ps = mix_target_with_ps
 
         if self.index_path.exists() and not override:
@@ -65,6 +76,7 @@ class VesuviusDataset(BaseDataset):
             if self.images_path is not None:
                 images_path = self.images_path
             pseudotarget_path = self.pseudotarget_path
+            teacher_probs_path = self.teacher_probs_path
         else:
             images_path = self.data_path / 'test_images'
 
@@ -85,6 +97,10 @@ class VesuviusDataset(BaseDataset):
                 if pseudotarget_path is not None:
                     item.update({
                         'pseudotarget_path': str(pseudotarget_path / image_path.name),
+                    })
+                if teacher_probs_path is not None:
+                    item.update({
+                        'teacher_probs_path': str(teacher_probs_path / image_path.name),
                     })
             is_item_in_dataset = (
                 (part == 'train' and i >= num_val_images) or

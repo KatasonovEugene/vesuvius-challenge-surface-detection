@@ -1,0 +1,14 @@
+train:
+  _target_: src.datasets.VesuviusDataset
+  part: 'train'
+  val_size: 0.1
+  override: False
+  teacher_probs_path: "data/teacher_probs"
+  instance_transforms: ${instance_transforms.train}
+val:
+  _target_: src.datasets.VesuviusDataset
+  part: 'val'
+  val_size: 0.1
+  override: False
+  teacher_probs_path: "data/teacher_probs"
+  instance_transforms: ${instance_transforms.inference}

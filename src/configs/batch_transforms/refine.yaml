@@ -13,7 +13,7 @@ train:
     prob: 0.5
   rot90:
     _target_: src.transforms.RandRotate90_3D
-    prob: 0.4
+    prob: 0.5
     possible_k: [1, 3]
     spatial_axes: [1, 2] # H W
 

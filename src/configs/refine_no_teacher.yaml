@@ -1,9 +1,8 @@
 defaults:
-  - teacher_model: nnunet
   - model: nnunet_refiner
   - writer: wandb
   - metrics: main
-  - datasets: default
+  - datasets: refine
   - dataloader: default
   - batch_transforms: refine
   - instance_transforms: refine
@@ -16,13 +15,12 @@ trainer:
   log_step: 10
   n_epochs: 50
   epoch_len: 1000
-  device_tensors: ["volume", "gt_mask", "gt_skel"]
+  device_tensors: ["volume", "gt_mask", "gt_skel", "teacher_probs"]
   use_amp: False
   amp_dtype: "bfloat16"
   max_grad_norm: 5
   resume_from: null
   from_pretrained: null
-  teacher_weights_path: 'models/nnunet-elastic.pth'
   device: auto
   override: False
   monitor: "min val_loss"
