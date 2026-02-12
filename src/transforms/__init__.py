@@ -14,6 +14,8 @@ from src.transforms.contrast import RandomContrast3D
 from src.transforms.gamma import RandomGammaShift3D, RandomInstanceGammaShift3D
 from src.transforms.z_drop import ZDrop3D
 from src.transforms.zoom import RandInstanceZoom3D
-from src.transforms.noise import RandAddStructuredNoise3D
+from src.transforms.noise import RandAddStructuredNoise3D, RandAddProbsNoise
 from src.transforms.skeletonize_diff_hard import SkeletonizeDiffHard, SkeletonizeDiffFast
 from src.transforms.mask_preprocess import GtMaskSmooth, GtMaskSmoothNoThreshold, GtMaskClosing
+from src.transforms.morphology import RandProbsErosionDilation
+from src.transforms.blur import RandProbsBlur

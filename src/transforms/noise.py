@@ -70,3 +70,42 @@ class RandAddStructuredNoise3D(nn.Module):
         volume = volume + apply_transform * alpha.view(-1, 1, 1, 1) * noise
 
         return {'volume': volume}
+
+
+class RandAddProbsNoise(nn.Module):
+    """
+    Randomly adds gaussian noise on 3D input.
+
+    Expected input shape: [B, D, H, W]
+    """
+
+    def __init__(self, prob=0.5, sigma=0.05):
+        super().__init__()
+
+        self.prob = min(1.0, max(0.0, prob))
+        self.sigma = sigma
+
+    def forward(self, teacher_probs, **batch):
+        """
+        Args:
+            teacher_probs (Tensor): input teacher probabilities tensor.
+        Returns:
+            teacher_probs (Tensor): tensor with randomly added noise.
+        """
+
+        if teacher_probs.ndim != 4:
+            raise RuntimeError(f'RandAddProbsNoise: input shape was not expected; input shape: {teacher_probs.shape}; expected shape: [B, D, H, W]')
+
+        apply_transform = torch.bernoulli(
+            torch.full(size=(teacher_probs.shape[0],), fill_value=self.prob, device=teacher_probs.device)
+        ).to(dtype=teacher_probs.dtype, device=teacher_probs.device).view(-1, 1, 1, 1)
+
+        if apply_transform.sum() == 0:
+            return {'teacher_probs': teacher_probs}
+
+        noise = torch.randn_like(teacher_probs)
+        noise = noise * self.sigma
+
+        teacher_probs = teacher_probs + apply_transform * noise
+
+        return {'teacher_probs': teacher_probs}
