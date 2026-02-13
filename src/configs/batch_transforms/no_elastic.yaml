@@ -1,0 +1,24 @@
+train:
+  shift_intensity:
+    _target_: src.transforms.RandShiftIntensity3D
+    offsets: 0.10
+    prob: 0.5
+  flip1:
+    _target_: src.transforms.RandFlip3D
+    spatial_axis: 0 # D
+    prob: 0.5
+  flip2:
+    _target_: src.transforms.RandFlip3D
+    spatial_axis: 1 # H
+    prob: 0.5
+  flip3:
+    _target_: src.transforms.RandFlip3D
+    spatial_axis: 2 # W
+    prob: 0.5
+  rot90:
+    _target_: src.transforms.RandRotate90_3D
+    prob: 0.4
+    possible_k: [1, 3]
+    spatial_axes: [1, 2] # H W
+
+inference: null
