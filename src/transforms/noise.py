@@ -1,6 +1,7 @@
 import torch
 from torch import nn
-import torch.nn.functional as F
+
+from src.utils.transform_utils import gaussian_blur_batch_3d
 
 
 class RandAddStructuredNoise3D(nn.Module):
@@ -26,20 +27,6 @@ class RandAddStructuredNoise3D(nn.Module):
         self.alpha_range = alpha_range
         self.sigma_range = sigma_range
 
-    def smooth_noise(self, noise, sigma):
-        size = int(2 * torch.ceil(sigma.max() * 2) + 1)
-
-        g = torch.exp((-(torch.arange(size, dtype=noise.dtype, device=noise.device) - size // 2)**2).unsqueeze(0) / (2 * sigma**2).unsqueeze(1))
-        g = g / g.sum(dim=1, keepdim=True)
-
-        B, S = g.shape[0], g.shape[1]
-
-        noise = noise.unsqueeze(0)
-        noise = F.conv3d(noise, g.view(B, 1, S, 1, 1), padding=(size//2, 0, 0), groups=B)
-        noise = F.conv3d(noise, g.view(B, 1, 1, S, 1), padding=(0, size//2, 0), groups=B)
-        noise = F.conv3d(noise, g.view(B, 1, 1, 1, S), padding=(0, 0, size//2), groups=B)
-
-        return noise.squeeze(0)
 
     def forward(self, volume, **batch):
         """
@@ -63,7 +50,7 @@ class RandAddStructuredNoise3D(nn.Module):
         sigma = torch.empty(size=(volume.shape[0],), dtype=volume.dtype, device=volume.device).uniform_(*self.sigma_range)
 
         noise = torch.randn_like(volume)
-        noise = self.smooth_noise(noise, sigma)
+        noise = gaussian_blur_batch_3d(noise, sigmas=sigma)
         noise = noise - noise.mean(dim=(1,2,3), keepdim=True)
         noise = noise / (noise.std(dim=(1,2,3), keepdim=True) + 1e-8)
 
@@ -79,11 +66,11 @@ class RandAddProbsNoise(nn.Module):
     Expected input shape: [B, D, H, W]
     """
 
-    def __init__(self, prob=0.5, sigma=0.05):
+    def __init__(self, prob=0.5, sigma_range=(0.03, 0.05)):
         super().__init__()
 
         self.prob = min(1.0, max(0.0, prob))
-        self.sigma = sigma
+        self.sigma_range = sigma_range
 
     def forward(self, teacher_probs, **batch):
         """
@@ -98,13 +85,15 @@ class RandAddProbsNoise(nn.Module):
 
         apply_transform = torch.bernoulli(
             torch.full(size=(teacher_probs.shape[0],), fill_value=self.prob, device=teacher_probs.device)
-        ).to(dtype=teacher_probs.dtype, device=teacher_probs.device).view(-1, 1, 1, 1)
+        ).to(dtype=teacher_probs.dtype).view(-1, 1, 1, 1)
 
         if apply_transform.sum() == 0:
             return {'teacher_probs': teacher_probs}
 
         noise = torch.randn_like(teacher_probs)
-        noise = noise * self.sigma
+
+        sigmas = torch.empty(size=(teacher_probs.shape[0],), dtype=teacher_probs.dtype, device=teacher_probs.device).uniform_(*self.sigma_range)
+        noise = noise * sigmas.view(-1, 1, 1, 1)
 
         teacher_probs = torch.clamp(teacher_probs + apply_transform * noise, 0.0, 1.0)
 

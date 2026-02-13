@@ -10,12 +10,12 @@ class RandProbsErosionDilation(nn.Module):
     Expected input shape: [B, D, H, W]
     """
 
-    def __init__(self, prob=0.5, threshold_range=(0.45, 0.55), radius=1, koef=0.3):
+    def __init__(self, prob=0.5, radius=1, threshold_range=(0.45, 0.55), koef_range=(0.25, 0.35)):
         super().__init__()
 
         self.prob = min(1.0, max(0.0, prob))
         self.threshold_range = threshold_range
-        self.koef = koef
+        self.koef_range = koef_range
         self.radius = radius
 
     def dilate(self, probs, radius):
@@ -55,6 +55,8 @@ class RandProbsErosionDilation(nn.Module):
 
         difference = united_morphology - thresholded.float()
 
-        teacher_probs = torch.clamp(teacher_probs + apply_transform * self.koef * difference, 0.0, 1.0)
+        koefs = torch.empty(size=(teacher_probs.shape[0],), dtype=teacher_probs.dtype, device=teacher_probs.device).uniform_(*self.koef_range)
+
+        teacher_probs = torch.clamp(teacher_probs + apply_transform * koefs.view(-1, 1, 1, 1) * difference, 0.0, 1.0)
 
         return {'teacher_probs': teacher_probs}

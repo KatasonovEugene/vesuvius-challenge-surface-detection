@@ -12,11 +12,11 @@ class RandProbsBlur(nn.Module):
     Expected input shape: [B, D, H, W]
     """
 
-    def __init__(self, prob=0.5, sigma=0.6):
+    def __init__(self, prob=0.5, sigma_range=(0.5, 0.6)):
         super().__init__()
 
         self.prob = min(1.0, max(0.0, prob))
-        self.sigma = sigma
+        self.sigma_range = sigma_range
 
     def forward(self, teacher_probs, **batch):
         """
@@ -36,6 +36,7 @@ class RandProbsBlur(nn.Module):
         if apply_transform.sum() == 0:
             return {'teacher_probs': teacher_probs}
 
-        teacher_probs = torch.where(apply_transform, torch.clamp(gaussian_blur_batch_3d(teacher_probs, sigma=self.sigma), 0.0, 1.0), teacher_probs)
+        sigmas = torch.empty(size=(teacher_probs.shape[0],), dtype=teacher_probs.dtype, device=teacher_probs.device).uniform_(*self.sigma_range)
+        teacher_probs = torch.where(apply_transform, torch.clamp(gaussian_blur_batch_3d(teacher_probs, sigmas=sigmas), 0.0, 1.0), teacher_probs)
 
         return {'teacher_probs': teacher_probs}
