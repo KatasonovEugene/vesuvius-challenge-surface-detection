@@ -1,10 +1,10 @@
 train:
-  crop_if_needed:
-    _target_: src.transforms.CropIfNeeded
-    size: [320, 320, 320]
-  pad_to_size:
-    _target_: src.transforms.PaddingToSize
-    size: [320, 320, 320]
+  # crop_if_needed:
+  #   _target_: src.transforms.CropIfNeeded
+  #   size: [320, 320, 320]
+  # pad_to_size:
+  #   _target_: src.transforms.PaddingToSize
+  #   size: [320, 320, 320]
   skeletonize:
     _target_: src.transforms.Skeletonize # skeletonize must be after crop
     dilation_iterations: 1
