@@ -23,7 +23,6 @@ class RefinerTrainer(BaseTrainer):
         self.probs_transforms = probs_transforms
         self.training_steps = 0
 
-
     def _froze_teacher(self):
         for param in self.teacher_trainable_params:
             param.requires_grad = False

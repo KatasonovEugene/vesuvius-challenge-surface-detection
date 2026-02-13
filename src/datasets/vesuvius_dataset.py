@@ -1,6 +1,4 @@
 import numpy as np
-import torch
-from tqdm.auto import tqdm
 import os
 from pathlib import Path
 import tifffile as tiff
@@ -113,6 +111,13 @@ class VesuviusDataset(BaseDataset):
         write_json(index, str(self.index_path))
 
         return index
+
+    def get_shape(self, ind):
+        item = self._index[ind]
+        path = item["image_path"]
+        with tiff.TiffFile(path) as tif:
+            shape = tif.series[0].shape
+        return tuple(shape)
 
     def load_object(self, path, dtype):
         volume = tiff.imread(path)
