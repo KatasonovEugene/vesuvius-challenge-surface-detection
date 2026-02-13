@@ -19,4 +19,6 @@ from src.transforms.skeletonize_diff_hard import SkeletonizeDiffHard, Skeletoniz
 from src.transforms.mask_preprocess import GtMaskSmooth, GtMaskSmoothNoThreshold, GtMaskClosing
 from src.transforms.morphology import RandProbsErosionDilation
 from src.transforms.blur import RandProbsBlur
-from src.transforms.uncertainty import RandProbsUncertainty
+from src.transforms.dropout import RandProbsUncertainty, RandForegroundProbDrop
+from src.transforms.probs_jitter import RandProbsJitter
+from src.transforms.sliding_window_artefacts import RandPatchProbReduction
