@@ -18,7 +18,7 @@ class RandSpatialCrop3D(nn.Module):
 
         self.size = size
 
-    def forward(self, volume, gt_mask=None, gt_skel=None, **batch):
+    def forward(self, volume, gt_mask=None, gt_skel=None, teacher_probs=None, **batch):
         """
         Args:
             volume (numpy array): volume numpy array.
@@ -50,18 +50,44 @@ class RandSpatialCrop3D(nn.Module):
         b_idx = np.arange(volume.shape[0])[:, None, None, None]
 
         crop = lambda x : x[b_idx, z_idx, y_idx, x_idx]
-        volume = crop(volume)
-        if gt_mask is not None:
-            gt_mask = crop(gt_mask)
-        if gt_skel is not None:
-            gt_skel = crop(gt_skel)
 
-        result = {'volume': volume}
+        result = {'volume': crop(volume)}
         if gt_mask is not None: 
-            result['gt_mask'] = gt_mask
+            result['gt_mask'] = crop(gt_mask)
         if gt_skel is not None: 
-            result['gt_skel'] = gt_skel
+            result['gt_skel'] = crop(gt_skel)
+        if teacher_probs is not None:
+            result['teacher_probs'] = crop(teacher_probs)
         return result
+
+
+class CropIfNeeded(nn.Module):
+    """
+    Randomly crops 3D input.
+    Expected input shape: [B, D, H, W]
+    """
+
+    def __init__(self, size):
+        super().__init__()
+
+        self.cropper = RandSpatialCrop3D(size)
+        self.size = size
+
+    def forward(self, volume, gt_mask=None, gt_skel=None, teacher_probs=None, **batch):
+        if volume.ndim != 4:
+            raise RuntimeError(f'RandSpatialCrop3D: input shape was not expected; input shape: {volume.shape}; expected shape: [B, D, H, W]')
+    
+        if volume.shape[1] <= self.size[0]:
+            result = {'volume': volume}
+            if gt_mask is not None: 
+                result['gt_mask'] = gt_mask
+            if gt_skel is not None: 
+                result['gt_skel'] = gt_skel
+            if teacher_probs is not None:
+                result['teacher_probs'] = teacher_probs
+            return result
+        else:
+            return self.cropper(volume=volume, gt_mask=gt_mask, gt_skel=gt_skel, teacher_probs=teacher_probs)
 
 
 class HighSumCrop3D(nn.Module):
