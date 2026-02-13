@@ -2,7 +2,7 @@ import torch.nn as nn
 from monai.networks.nets import SegResNet
 
 
-class VecFieldPredictor(nn.Module):
+class VectorFieldPredictor(nn.Module):
     def __init__(
         self,
         spatial_dims=3,
@@ -26,6 +26,6 @@ class VecFieldPredictor(nn.Module):
 
     def forward(self, volume, **batch):
         volume = volume.unsqueeze(1)
-        vec_preds = self.backbone(volume)    # (B, 3, D, H, W)
-        vec_preds = self.act(vec_preds)
-        return {'vec_preds': vec_preds}
+        vector_preds = self.backbone(volume)    # (B, 3, D, H, W)
+        vector_preds = self.act(vector_preds)
+        return {'vector_preds': vector_preds}

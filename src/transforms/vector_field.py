@@ -23,6 +23,7 @@ class VectorField3D(nn.Module):
         vectors = normals / norm
         
         vectors = vectors * mask_bool[np.newaxis, ...]
+        vectors = vectors.astype(np.float32)
 
         result = {
             'volume': volume,

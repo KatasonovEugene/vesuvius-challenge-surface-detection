@@ -1,4 +1,0 @@
-_target_: src.loss.BaseLoss
-num_classes: 2
-vec_weight: 1.0
-eps: 1e-7

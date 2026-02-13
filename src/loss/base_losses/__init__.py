@@ -4,4 +4,5 @@ from src.loss.base_losses.dice_loss import DiceLoss
 from src.loss.base_losses.fp_loss import FPLoss
 from src.loss.base_losses.skel_loss import SkelLoss
 from src.loss.base_losses.tversky_loss import TverskyLoss
-from src.loss.base_losses.vec_loss import VecLoss
+from src.loss.base_losses.cosine_sim_loss import CosineSimLoss
+from src.loss.base_losses.vector_l2_loss import VectorL2Loss

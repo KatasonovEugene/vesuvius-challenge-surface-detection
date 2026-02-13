@@ -6,4 +6,4 @@ from src.model.sliding_window_wrapper import SlidingWindowWrapper
 from src.model.compile_wrapper import CompileWrapper
 from src.model.nnunet import nnUNetDetector, nnUNetDetector4OutputChannels, nnUNetDetector2Backbones
 from src.model.ensemble import Ensemble
-from src.model.vec_field_predictor import VecFieldPredictor
+from src.model.vector_field_predictor import VectorFieldPredictor
