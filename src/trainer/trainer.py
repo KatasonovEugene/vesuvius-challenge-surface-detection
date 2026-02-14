@@ -94,9 +94,13 @@ class Trainer(BaseTrainer):
     def _log_batch(self, batch_idx, batch, mode="train"):
         if mode != "train":
             indices = np.arange(31, 160, step=32)
-            logits = batch['logits'][0]
-            prob = torch.softmax(logits, dim=0)[1]
-            pred = logits.argmax(dim=0)
+            if 'logits' in batch:
+                logits = batch['logits'][0]
+                prob = torch.softmax(logits, dim=0)[1]
+                pred = logits.argmax(dim=0)
+            else:
+                prob = batch['probs'][0, 0]
+                pred = prob > 0.5
             pred = self.convert_image(pred)
             prob = self.convert_heatmap(prob)
             slices = {
