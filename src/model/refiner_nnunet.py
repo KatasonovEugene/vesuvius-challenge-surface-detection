@@ -9,7 +9,7 @@ class nnRefiner(nnUNetDetector):
         inpt = torch.cat([volume, teacher_probs], dim=1)
         
         delta = self.backbone(inpt)    # (B, 1, D, H, W)
-        teacher_probs_logits = torch.logit(teacher_probs.clamp(1e-4, 1-1e-4))
+        teacher_probs_logits = torch.logit(teacher_probs.clamp(1e-6, 1 - 1e-6))
         final_probs = torch.sigmoid(teacher_probs_logits + delta)
 
         return {'probs': final_probs}

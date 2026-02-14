@@ -16,5 +16,40 @@ train:
     prob: 0.5
     possible_k: [1, 3]
     spatial_axes: [1, 2] # H W
+  noise:
+    _target_: src.transforms.RandAddProbsNoise
+    prob: 0.5
+    sigma_range: [0.03, 0.05]
+  blur:
+    _target_: src.transforms.RandProbsBlur
+    prob: 0.4
+    sigma_range: [0.5, 0.65]
+  morphology:
+    _target_: src.transforms.RandProbsErosionDilation
+    prob: 0.35
+    radius: 1
+    threshold_range: [0.45, 0.55]
+    koef_range: [0.2, 0.3]
+  uncertainty:
+    _target_: src.transforms.RandProbsUncertainty
+    prob: 0.25
+    voxel_prob_range: [0.005, 0.02]
+    koef_range: [0.45, 0.55]
+  holes_injection:
+    _target_: src.transforms.RandForegroundProbDrop
+    prob: 0.25
+    voxel_prob_range: [0.005, 0.02]
+    threshold_range: [0.45, 0.55]
+    koef_range: [0.15, 0.25]
+  sliding_window_artefact:
+    _target_: src.transforms.RandPatchProbReduction
+    prob: 0.20
+    patch_size_range: [140, 180]
+    koef_range: [0.75, 0.85]
+    sigma_range: [1.0, 1.1]
+  threshold_jitter:
+    _target_: src.transforms.RandProbsJitter
+    prob: 0.25
+    shift_range: [0.03, 0.05]
 
 inference: null
