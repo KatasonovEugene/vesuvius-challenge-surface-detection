@@ -16,9 +16,13 @@ class CosineSimLoss(nn.Module):
         """
 
         mask_target = (gt_mask == 1).float()
+        valid = (vector.norm(dim=1, keepdim=True) > 0.5).float()
+        mask_target = mask_target * valid
 
-        cosine_sim = F.cosine_similarity(vector_preds, vector, dim=1) # [B, D, H, W]
-        dir_loss = (1.0 - cosine_sim) * mask_target.squeeze(1)
+        vector_preds = F.normalize(vector_preds, dim=1, eps=self.eps)
+        vector = F.normalize(vector, dim=1, eps=self.eps)
+
+        cosine_sim = (vector_preds * vector).sum(dim=1, keepdim=True)
+        dir_loss = (1.0 - cosine_sim) * mask_target
         loss_dir = dir_loss.sum() / (mask_target.sum() + self.eps)
-
         return loss_dir.float()

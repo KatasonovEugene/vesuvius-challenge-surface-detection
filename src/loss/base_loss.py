@@ -14,6 +14,8 @@ class BaseLoss(nn.Module):
         fp_weight=0.0,
         tversky_weight=0.0,
         vector_l2_weight=0.0,
+        vector_l2_bg_weight=0.0,
+        vector_l2_gt_weight=0.0,
         cosine_sim_weight=0.0,
         eps=1e-7,
         cld_calc_gt_skel=False,
@@ -57,7 +59,11 @@ class BaseLoss(nn.Module):
             beta=tversky_beta,
             eps=eps
         )
-        self.vector_l2_loss = VectorL2Loss(eps=eps)
+        self.vector_l2_loss = VectorL2Loss(
+            w_gt=vector_l2_gt_weight,
+            w_bg=vector_l2_bg_weight,
+            eps=eps
+        )
         self.cosine_sim_loss = CosineSimLoss(eps=eps)
         self.losses = {
             "ce_loss": (ce_weight, self.ce_loss),

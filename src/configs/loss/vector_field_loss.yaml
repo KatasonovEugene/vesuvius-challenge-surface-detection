@@ -1,5 +1,7 @@
 _target_: src.loss.BaseLoss
 num_classes: 3
 vector_l2_weight: 1.0
+vector_l2_gt_weight: 1.0
+vector_l2_bg_weight: 0.05
 cosine_sim_weight: 1.0
 eps: 1e-7
