@@ -4,6 +4,11 @@ train:
     size: [160, 160, 160]
     num_candidates: 10
     prefer_skeleton: False
+  loss_weighter:
+    _target_: src.transforms.LossNearBoundaries
+    mu: 3.0
+    sigma: 2.0
+    alpha: 2.0
   skeletonize:
     _target_: src.transforms.Skeletonize # skeletonize must be after crop
     dilation_iterations: 1
@@ -30,6 +35,8 @@ train:
     std: 0.166721404805906
 
 inference:
+  loss_weighter:
+    _target_: src.transforms.LossNearBoundariesInference
   skeletonize:
     _target_: src.transforms.Skeletonize # skeletonize must be after crop
     dilation_iterations: 1

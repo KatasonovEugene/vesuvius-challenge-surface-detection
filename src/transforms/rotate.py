@@ -34,7 +34,7 @@ class RandRotate90_3D(nn.Module):
     def rotate90(self, data):
         return torch.rot90(data, k=1, dims=(self.spatial_axes[0] + 1, self.spatial_axes[1] + 1)) # +1 due to batch dim
 
-    def forward(self, volume, gt_mask, gt_skel, **batch):
+    def forward(self, volume, gt_mask, gt_skel, loss_weights=None, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
@@ -62,8 +62,10 @@ class RandRotate90_3D(nn.Module):
             volume = torch.where(apply, self.rotate90(volume), volume)
             gt_mask = torch.where(apply, self.rotate90(gt_mask), gt_mask)
             gt_skel = torch.where(apply, self.rotate90(gt_skel), gt_skel)
+            if loss_weights is not None:
+                loss_weights = torch.where(apply, self.rotate90(loss_weights), loss_weights)
 
-        return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel}
+        return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel, 'loss_weights': loss_weights}
 
 
 class Rotate90_3D(BaseTTATransform):

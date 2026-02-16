@@ -22,7 +22,7 @@ class RandFlip3D(nn.Module):
         self.prob = min(1.0, max(0.0, prob))
         self.spatial_axis = spatial_axis
 
-    def forward(self, volume, gt_mask, gt_skel, **batch):
+    def forward(self, volume, gt_mask, gt_skel, loss_weights=None, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
@@ -45,8 +45,10 @@ class RandFlip3D(nn.Module):
         volume = torch.where(apply_transform, flip(volume), volume)
         gt_mask = torch.where(apply_transform, flip(gt_mask), gt_mask)
         gt_skel = torch.where(apply_transform, flip(gt_skel), gt_skel)
+        if loss_weights is not None:
+            loss_weights = torch.where(apply_transform, flip(loss_weights), loss_weights)
 
-        return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel}
+        return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel, 'loss_weights': loss_weights}
 
 
 class Flip3D(BaseTTATransform):
@@ -95,7 +97,7 @@ class Flip3D(BaseTTATransform):
         return result
 
 
-    def detransform(self, gt_mask=None, gt_skel=None, **batch):
+    def detransform(self, gt_mask=None, gt_skel=None, loss_weights=None, **batch):
         """
         Args:
             logits (Tensor): rotated logits tensor.
@@ -120,6 +122,8 @@ class Flip3D(BaseTTATransform):
             gt_mask = torch.flip(gt_mask, dims=[self.spatial_axis + 1])
         if gt_skel is not None:
             gt_skel = torch.flip(gt_skel, dims=[self.spatial_axis + 1])
+        if loss_weights is not None:
+            loss_weights = torch.flip(loss_weights, dims=[self.spatial_axis + 1])
 
         if 'probs' in batch:
             result = {'probs': preds}
@@ -130,5 +134,7 @@ class Flip3D(BaseTTATransform):
             result['gt_mask'] = gt_mask
         if gt_skel is not None:
             result['gt_skel'] = gt_skel
+        if loss_weights is not None:
+            result['loss_weights'] = loss_weights
 
         return result

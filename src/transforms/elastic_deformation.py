@@ -45,7 +45,7 @@ class ElasticDeformation(nn.Module):
 
         return volume.squeeze(1)
 
-    def forward(self, volume, gt_mask, gt_skel, **batch):
+    def forward(self, volume, gt_mask, gt_skel, loss_weights=None, **batch):
         """
         Args:
             volume (Tensor): volume tensor.
@@ -89,6 +89,10 @@ class ElasticDeformation(nn.Module):
         volume_changed = F.grid_sample(volume.unsqueeze(1), grid, mode="bilinear", padding_mode="border", align_corners=True).squeeze(1)
         gt_mask_changed = F.grid_sample(gt_mask.unsqueeze(1).float(), grid, mode="nearest", padding_mode="border", align_corners=True).squeeze(1)
         gt_mask_changed = gt_mask_changed.round().to(dtype=gt_mask.dtype)
+        if loss_weights is not None:
+            loss_weights_changed =F.grid_sample(loss_weights.unsqueeze(1), grid, mode="bilinear", padding_mode="border", align_corners=True).squeeze(1)
+        else:
+            loss_weights_changed = None
         if gt_skel.dtype == torch.bool:
             gt_skel_changed = F.grid_sample(gt_skel.unsqueeze(1).float(), grid, mode="nearest", padding_mode="border", align_corners=True).squeeze(1)
             gt_skel_changed = gt_skel_changed.round().to(dtype=gt_skel.dtype)
@@ -98,5 +102,7 @@ class ElasticDeformation(nn.Module):
         volume = torch.where(apply_transform, volume_changed, volume)
         gt_mask = torch.where(apply_transform, gt_mask_changed, gt_mask)
         gt_skel = torch.where(apply_transform, gt_skel_changed, gt_skel)
+        if loss_weights is not None:
+            loss_weights = torch.where(apply_transform, loss_weights_changed, loss_weights)
 
-        return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel}
+        return {'volume': volume, 'gt_mask': gt_mask, 'gt_skel': gt_skel, 'loss_weights': loss_weights}

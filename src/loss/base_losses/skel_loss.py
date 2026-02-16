@@ -31,7 +31,7 @@ class SkelLoss(nn.Module):
         mask = (mask - batch_min) / (batch_max - batch_min + self.eps)
         return self.skeletonize(mask.unsqueeze(1)).squeeze(1)
 
-    def forward(self, probs: torch.Tensor, gt_mask: torch.Tensor, gt_skel: torch.Tensor, training_steps=None, **batch):
+    def forward(self, probs: torch.Tensor, gt_mask: torch.Tensor, gt_skel: torch.Tensor, loss_weights=None, training_steps=None, **batch):
         dims = (1, 2, 3) 
         pred_prob = probs[:, 1]
         valid_mask = (gt_mask != 2).float()
@@ -53,4 +53,7 @@ class SkelLoss(nn.Module):
             weight = min(1.0, training_steps / self.warmup_steps)
             skel_loss = skel_loss * weight
 
-        return skel_loss
+        if loss_weights is not None:
+            return skel_loss * loss_weights
+        else:
+            return skel_loss
