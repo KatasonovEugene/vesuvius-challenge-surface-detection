@@ -85,12 +85,13 @@ def main(config):
         zip_path.parent.mkdir(exist_ok=True, parents=True)
 
     dir_path = save_path / output_part
-    with zipfile.ZipFile(
-        zip_path, "w", compression=zipfile.ZIP_DEFLATED
-    ) as z:
-        for file in dir_path.rglob('*'):
-            if file.is_file():
-                z.write(file, arcname=file.relative_to(dir_path))
+    if is_kaggle_env:
+        with zipfile.ZipFile(
+            zip_path, "w", compression=zipfile.ZIP_DEFLATED
+        ) as z:
+            for file in dir_path.rglob('*'):
+                if file.is_file():
+                    z.write(file, arcname=file.relative_to(dir_path))
 
     for part in logs.keys():
         for key, value in logs[part].items():
