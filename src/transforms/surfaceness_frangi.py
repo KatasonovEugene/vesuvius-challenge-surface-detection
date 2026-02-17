@@ -24,6 +24,7 @@ class SurfacenessFrangiEnhance(nn.Module):
         pre_threshold: float = 0.75,
         threshold_mode: str = "hard",  # "hard" -> {0,1}, "mask" -> keep original values above threshold
         sigmas=(1.0, 2.0),
+        alpha: float = 0.8,
         beta: float = 0.5,
         eigen_mode: str = "approx",  # "approx" (fast, GPU) | "full" (exact, CPU eig)
         normalize_response: bool = True,
@@ -40,6 +41,7 @@ class SurfacenessFrangiEnhance(nn.Module):
         self.pre_threshold = float(pre_threshold)
         self.threshold_mode = threshold_mode
         self.sigmas = tuple(sigmas)
+        self.alpha = float(alpha)
         self.beta = float(beta)
         self.eigen_mode = eigen_mode
         self.normalize_response = bool(normalize_response)
@@ -147,8 +149,8 @@ class SurfacenessFrangiEnhance(nn.Module):
         return l1, l2, l3
 
     def _surfaceness(self, l1, l2, l3):
-        plate = torch.exp(-(l1**2 + l2**2) / (self.beta**2 * (l3**2 + self.eps)))
-        return plate * torch.abs(l3)
+        plate = torch.exp(-(l1**2 + l2**2) / (2 * self.beta**2 * (l3**2 + self.eps)))
+        return plate
 
     def forward(self, outputs: torch.Tensor, **batch):
         was_unsqueezed = False
@@ -160,10 +162,11 @@ class SurfacenessFrangiEnhance(nn.Module):
         for i in range(outputs.shape[0]):
             volume = outputs[i]
 
+            mask = volume >= self.pre_threshold
             if self.threshold_mode == "hard":
-                filtered_input = (volume >= self.pre_threshold).to(volume.dtype)
+                filtered_input = mask.to(volume.dtype)
             else:
-                filtered_input = volume * (volume >= self.pre_threshold).to(volume.dtype)
+                filtered_input = volume * mask.to(volume.dtype)
 
             total_surf = []
             for sigma in self.sigmas:
@@ -187,7 +190,7 @@ class SurfacenessFrangiEnhance(nn.Module):
                 total_surf.append(surf)
 
             surfaceness = torch.max(torch.stack(total_surf, dim=0), dim=0).values
-            out = filtered_input * surfaceness
+            out = torch.maximum(volume, surfaceness * self.alpha * mask)
 
             if self.normalize_output:
                 mx = out.max()

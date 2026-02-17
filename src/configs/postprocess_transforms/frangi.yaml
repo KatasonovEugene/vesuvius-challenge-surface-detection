@@ -5,12 +5,13 @@
 
 enhance:
   _target_: src.transforms.SurfacenessFrangiEnhance
-  pre_threshold: 0.75
+  pre_threshold: 0.2
   threshold_mode: mask  # hard -> {0,1}, mask -> keep original probs above threshold
-  sigmas: [1.0, 2.0]
-  beta: 0.5
+  sigmas: [0.5, 1.0, 1.5]
+  alpha: 0.8
+  beta: 1.0
   eigen_mode: full
-  normalize_response: true
+  normalize_response: false
   normalize_output: false
   eps: 1e-7
 
