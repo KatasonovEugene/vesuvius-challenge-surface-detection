@@ -5,7 +5,7 @@ defaults:
   - dataloader: default
   - batch_transforms: main
   - instance_transforms: main
-  - postprocess_transforms: empty
+  - postprocess_transforms: main
   - tta_transforms: empty
   - _self_
 inferencer:

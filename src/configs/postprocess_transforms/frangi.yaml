@@ -1,0 +1,25 @@
+# Additional post-processing step:
+# 1) threshold softmax output at 0.75
+# 2) run a "surfaceness" Frangi-style filter (Hessian eigenvalue handling adapted for plates)
+# 3) then apply the usual binarization + morphology
+
+enhance:
+  _target_: src.transforms.SurfacenessFrangiEnhance
+  pre_threshold: 0.75
+  threshold_mode: mask  # hard -> {0,1}, mask -> keep original probs above threshold
+  sigmas: [1.0, 2.0]
+  beta: 0.5
+  eigen_mode: full
+  normalize_response: true
+  normalize_output: false
+  eps: 1e-7
+
+outputs:
+  _target_: src.transforms.PostProcess
+  T_low: 0.50
+  T_high: 0.90
+  z_radius: 1
+  xy_radius: 0
+  pre_closing_dust_min_size: 0
+  dust_min_size: 100
+  quantile_threshold: false

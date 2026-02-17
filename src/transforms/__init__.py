@@ -18,3 +18,4 @@ from src.transforms.noise import RandAddStructuredNoise3D
 from src.transforms.skeletonize_diff_hard import SkeletonizeDiffHard, SkeletonizeDiffFast
 from src.transforms.mask_preprocess import GtMaskSmooth, GtMaskSmoothNoThreshold, GtMaskClosing
 from src.transforms.skelet_interpolation import SkeletonInterpolation
+from src.transforms.surfaceness_frangi import SurfacenessFrangiEnhance
