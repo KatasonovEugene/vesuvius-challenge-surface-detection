@@ -28,9 +28,15 @@ class nnUnetLoss(nn.Module):
         mask = mask.index_select(4, idx_w)
         return mask
 
-    def forward(self, logits, outputs, gt_mask, gt_skel, training_steps=None, **batch):
+    def forward(self, logits, outputs, gt_mask, gt_skel, loss_weights=None, training_steps=None, **batch):
         if outputs is None:
-            return self.base_loss(logits=logits, gt_mask=gt_mask, gt_skel=gt_skel, training_steps=training_steps)
+            return self.base_loss(
+                logits=logits,
+                gt_mask=gt_mask,
+                gt_skel=gt_skel,
+                loss_weights=loss_weights,
+                training_steps=training_steps,
+            )
 
         n_heads = outputs.shape[1]
         if self.ds_weights is None:
@@ -49,7 +55,23 @@ class nnUnetLoss(nn.Module):
             else:
                 gt_mask_i, gt_skel_i = gt_mask, gt_skel
 
-            result_i = self.base_loss(logits=logits_i, gt_mask=gt_mask_i, gt_skel=gt_skel_i, training_steps=training_steps)
+            if loss_weights is not None:
+                if logits_i.shape[2:] != loss_weights.shape[1:]:
+                    loss_weights_i = self._nearest_resize_int(
+                        loss_weights.unsqueeze(1), size=logits_i.shape[2:]
+                    ).squeeze(1)
+                else:
+                    loss_weights_i = loss_weights
+            else:
+                loss_weights_i = None
+
+            result_i = self.base_loss(
+                logits=logits_i,
+                gt_mask=gt_mask_i,
+                gt_skel=gt_skel_i,
+                loss_weights=loss_weights_i,
+                training_steps=training_steps,
+            )
 
             weight = self.ds_weights[i]
             if accum_results == {}:

@@ -43,8 +43,12 @@ class SkelLoss(nn.Module):
             gt_skel = gaussian_blur_batch_3d(gt_skel.float(), sigma=self.sigma)
             gt_skel = torch.clamp(gt_skel, 0.0, 1.0)
 
-        intersection = (pred_prob * gt_skel * valid_mask).sum(dim=dims)
-        skel_sum = (gt_skel * valid_mask).sum(dim=dims)
+        weights = valid_mask
+        if loss_weights is not None:
+            weights = weights * loss_weights
+
+        intersection = (pred_prob * gt_skel * weights).sum(dim=dims)
+        skel_sum = (gt_skel * weights).sum(dim=dims)
         has_skeleton = (skel_sum > 0).float()
         recall = (intersection + self.eps) / (skel_sum + self.eps)
         skel_loss = torch.mean((1.0 - recall) * has_skeleton)
@@ -53,7 +57,4 @@ class SkelLoss(nn.Module):
             weight = min(1.0, training_steps / self.warmup_steps)
             skel_loss = skel_loss * weight
 
-        if loss_weights is not None:
-            return skel_loss * loss_weights
-        else:
-            return skel_loss
+        return skel_loss

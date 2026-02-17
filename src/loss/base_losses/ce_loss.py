@@ -16,16 +16,22 @@ class CELoss(nn.Module):
 
     def forward(self, logits, gt_mask, loss_weights=None, **batch):
         gt_mask = gt_mask.long()
-        if (gt_mask == self.ce_ignore_index).all():
+        valid_mask = gt_mask != self.ce_ignore_index
+        if valid_mask.sum() == 0:
             return torch.tensor(0.0, device=logits.device, requires_grad=True)
 
-        ce_loss = F.cross_entropy(
+        per_voxel = F.cross_entropy(
             logits,
             gt_mask,
             ignore_index=self.ce_ignore_index,
+            reduction="none",
         )
 
-        if loss_weights is not None:
-            return ce_loss * loss_weights
-        else:
-            return ce_loss
+        if loss_weights is None:
+            return per_voxel[valid_mask].mean()
+
+        weights = loss_weights * valid_mask
+        denom = weights.sum()
+        if denom == 0:
+            return torch.tensor(0.0, device=logits.device, requires_grad=True)
+        return (per_voxel * weights).sum() / denom

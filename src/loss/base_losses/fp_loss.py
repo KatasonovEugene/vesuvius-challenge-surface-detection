@@ -11,10 +11,11 @@ class FPLoss(nn.Module):
         probs = probs[:, 1]
         valid_mask = (gt_mask != 2).float()
         gt_bg = (gt_mask == 0).float()
-        fp_volume = probs * gt_bg * valid_mask
-        fp_loss = fp_volume.sum() / ((gt_bg * valid_mask).sum() + self.eps)
+        if loss_weights is None:
+            fp_volume = probs * gt_bg * valid_mask
+            return fp_volume.sum() / ((gt_bg * valid_mask).sum() + self.eps)
 
-        if loss_weights is not None:
-            return fp_loss * loss_weights
-        else:
-            return fp_loss
+        weights = loss_weights * valid_mask
+        fp_volume = probs * gt_bg * weights
+        denom = (gt_bg * weights).sum()
+        return fp_volume.sum() / (denom + self.eps)

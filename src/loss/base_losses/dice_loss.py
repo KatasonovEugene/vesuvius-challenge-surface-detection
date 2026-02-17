@@ -35,16 +35,13 @@ class DiceLoss(nn.Module):
         reduction_dims = [0] + spatial_dims
 
         valid_mask = valid_mask.unsqueeze(1)
-        probs = probs * valid_mask
-        target = target * valid_mask
+        weights = valid_mask.to(dtype=probs.dtype)
+        if loss_weights is not None:
+            weights = weights * loss_weights.unsqueeze(1)
 
-        intersection = torch.sum(probs * target, dim=reduction_dims)
-        union = torch.sum(probs + target, dim=reduction_dims)
+        intersection = torch.sum(weights * probs * target, dim=reduction_dims)
+        union = torch.sum(weights * (probs + target), dim=reduction_dims)
 
         dice_score = (2.0 * intersection + self.eps) / (union + self.eps)
         dice_loss = 1.0 - dice_score.mean()
-
-        if loss_weights is not None:
-            return dice_loss * loss_weights
-        else:
-            return dice_loss
+        return dice_loss
