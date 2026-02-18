@@ -24,9 +24,9 @@ class VesuviusDataset(BaseDataset):
     ):
         index_name = f"{part}_index.json"
         if pseudotarget_path is not None:
-            index_name = "pseudotarget" + index_name
+            index_name = Path(pseudotarget_path).stem + '_' + index_name
         if from_index is not None:
-            index_name = index_name + '_' + str(from_index)
+            index_name = + str(from_index) + '_' + index_name 
 
         self.is_kaggle_env = 'KAGGLE_URL_BASE' in os.environ
         if self.is_kaggle_env:

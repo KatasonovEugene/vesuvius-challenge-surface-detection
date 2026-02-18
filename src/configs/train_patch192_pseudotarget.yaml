@@ -4,7 +4,7 @@ defaults:
   - metrics: main
   - datasets: pseudotarget
   - dataloader: default
-  - batch_transforms: without_cutout
+  - batch_transforms: main
   - instance_transforms: pseudotarget
   - loss: nnunet_ce_dice_fp_skel_loss
   - optimizer: adamw
