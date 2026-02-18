@@ -18,12 +18,15 @@ class VesuviusDataset(BaseDataset):
         images_path=None,
         pseudotarget_path=None,
         mix_target_with_ps=True,
+        from_index=None,
         *args,
         **kwargs,
     ):
         index_name = f"{part}_index.json"
         if pseudotarget_path is not None:
             index_name = "pseudotarget" + index_name
+        if from_index is not None:
+            index_name = index_name + '_' + str(from_index)
 
         self.is_kaggle_env = 'KAGGLE_URL_BASE' in os.environ
         if self.is_kaggle_env:
@@ -32,8 +35,9 @@ class VesuviusDataset(BaseDataset):
             self.index_path = Path("data")
         self.index_path.mkdir(parents=True, exist_ok=True)
         self.index_path = self.index_path / index_name
+        self.from_index = from_index
 
-        assert part in ['train', 'val', 'test']
+        assert part in ['train', 'val', 'test', 'full_train']
         self.val_size = val_size
         self.is_train = part != 'test'
         if self.is_kaggle_env:
@@ -89,8 +93,11 @@ class VesuviusDataset(BaseDataset):
             is_item_in_dataset = (
                 (part == 'train' and i >= num_val_images) or
                 (part == 'val' and i < num_val_images) or
-                part == 'test'
+                part == 'test' or
+                part == 'full_train'
             )
+            if self.from_index is not None and part == 'full_train':
+                is_item_in_dataset = i >= self.from_index
             if is_item_in_dataset:
                 index.append(item)
 
