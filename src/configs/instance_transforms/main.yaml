@@ -9,6 +9,12 @@ train:
     dilation_iterations: 1
   to_torch:
     _target_: src.transforms.ToTorch # to_torch must be after skeletonize
+  LocalGaussianBlur3D:
+    _target_: src.transforms.LocalGaussianBlur3D
+    p: 0.5
+    num_points: [5, 7]
+    radius: [3, 5]
+    sigma: [0.8, 1.6]
   scale_intensity:
     _target_: src.transforms.ScaleIntensityRange
     a_min: 0
