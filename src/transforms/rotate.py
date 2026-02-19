@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 import numpy as np
 from torch import nn
 from src.transforms.base_tta_transform import BaseTTATransform
@@ -255,3 +256,140 @@ class RandInstanceSmallRotate3D(nn.Module):
         )[None]
 
         return {'volume': volume, 'gt_mask': gt_mask}
+
+
+class RandSmallRotate3D(nn.Module):
+    """
+    Randomly rotates 3D input in batch with torch.
+
+    Expected input shape: [B, D, H, W]
+    """
+
+    def __init__(self, prob=0.5, angle_z_range=(-10, 10), angle_y_range=(-10, 10), angle_x_range=(-10, 10)):
+        """
+        Args:
+            prob (float):
+                rotate is applied with given probability
+            angle_range (tuple):
+                The range of possible rotation angles in degrees.
+        """
+        super().__init__()
+
+        self.prob = min(1.0, max(0.0, prob))
+        self.angle_x_range = angle_x_range
+        self.angle_y_range = angle_y_range
+        self.angle_z_range = angle_z_range
+
+    def get_rotation_matrix(self, angles):
+        rx, ry, rz = angles[:, 0], angles[:, 1], angles[:, 2]
+
+        cosx = torch.cos(rx)
+        sinx = torch.sin(rx)
+        cosy = torch.cos(ry)
+        siny = torch.sin(ry)
+        cosz = torch.cos(rz)
+        sinz = torch.sin(rz)
+
+        ones = torch.ones_like(rx)
+        zeros = torch.zeros_like(rx)
+
+        rot_x = torch.stack([
+            torch.stack([ones, zeros, zeros], dim=-1),
+            torch.stack([zeros, cosx, -sinx], dim=-1),
+            torch.stack([zeros, sinx, cosx], dim=-1),
+        ], dim=-2)
+
+        rot_y = torch.stack([
+            torch.stack([cosy, zeros, siny], dim=-1),
+            torch.stack([zeros, ones, zeros], dim=-1),
+            torch.stack([-siny, zeros, cosy], dim=-1),
+        ], dim=-2)
+
+        rot_z = torch.stack([
+            torch.stack([cosz, -sinz, zeros], dim=-1),
+            torch.stack([sinz, cosz, zeros], dim=-1),
+            torch.stack([zeros, zeros, ones], dim=-1),
+        ], dim=-2)
+
+        return torch.bmm(rot_z, torch.bmm(rot_y, rot_x))
+
+    def forward(self, volume, gt_mask, gt_skel=None, **batch):
+        """
+        Args:
+            volume (Tensor): volume tensor.
+            gt_mask (Tensor): ground truth mask tensor.
+            gt_skel (None or Tensor): ground truth skeleton tensor.
+        Returns:
+            volume (Tensor): randomly rotated volume tensor.
+            gt_mask (Tensor): randomly rotated ground truth mask tensor.
+            gt_skel (None or Tensor): randomly rotated ground truth skeleton tensor.
+        """
+
+        if volume.dim() != 4:
+            raise RuntimeError(
+                f'RandSmallRotate3D: input shape was not expected; input shape: {volume.shape}; expected shape: [B, D, H, W]'
+            )
+
+        B, D, H, W = volume.shape
+        apply_transform = torch.bernoulli(
+            torch.full(size=(B,), fill_value=self.prob, device=volume.device)
+        ).to(torch.bool)
+
+        angles_dtype = volume.dtype if volume.is_floating_point() else torch.float32
+        angles = torch.empty((B, 3), device=volume.device, dtype=angles_dtype)
+        angles[:, 0].uniform_(self.angle_x_range[0], self.angle_x_range[1])
+        angles[:, 1].uniform_(self.angle_y_range[0], self.angle_y_range[1])
+        angles[:, 2].uniform_(self.angle_z_range[0], self.angle_z_range[1])
+        angles = angles * (torch.pi / 180.0)
+
+        rotation_matrix = self.get_rotation_matrix(angles)
+        identity_matrix = torch.eye(3, device=volume.device, dtype=rotation_matrix.dtype).expand(B, -1, -1)
+        rotation_matrix = torch.where(apply_transform.view(-1, 1, 1), rotation_matrix, identity_matrix)
+
+        affine = torch.zeros((B, 3, 4), device=volume.device, dtype=rotation_matrix.dtype)
+        affine[:, :, :3] = rotation_matrix
+
+        grid = F.affine_grid(affine, size=(B, 1, D, H, W), align_corners=True)
+
+        volume_changed = F.grid_sample(
+            volume.unsqueeze(1),
+            grid,
+            mode="bilinear",
+            padding_mode="zeros",
+            align_corners=True
+        ).squeeze(1)
+
+        gt_mask_changed = F.grid_sample(
+            gt_mask.unsqueeze(1).float(),
+            grid,
+            mode="nearest",
+            padding_mode="zeros",
+            align_corners=True
+        ).squeeze(1)
+
+        gt_skel_changed = None
+        if gt_skel is not None:
+            gt_skel_changed = F.grid_sample(
+                gt_skel.unsqueeze(1).float(),
+                grid,
+                mode="nearest",
+                padding_mode="zeros",
+                align_corners=True
+            ).squeeze(1)
+
+        valid_mask = (
+            (grid[..., 0].abs() <= 1)
+            & (grid[..., 1].abs() <= 1)
+            & (grid[..., 2].abs() <= 1)
+        )
+        gt_mask_changed = torch.where(
+            valid_mask,
+            gt_mask_changed,
+            torch.tensor(2, device=gt_mask_changed.device, dtype=gt_mask_changed.dtype)
+        )
+
+        result = {'volume': volume_changed, 'gt_mask': gt_mask_changed.to(gt_mask.dtype)}
+        if gt_skel_changed is not None:
+            result['gt_skel'] = gt_skel_changed.to(gt_skel.dtype)
+
+        return result

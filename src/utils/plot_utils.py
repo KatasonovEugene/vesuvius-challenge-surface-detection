@@ -1,22 +1,63 @@
-import matplotlib
-# matplotlib.use('Agg')
-
-# import napari
-import matplotlib.pyplot as plt
-import numpy as np
 import os
 from pathlib import Path
 
+import matplotlib
+import numpy as np
+import napari
+
+HEADLESS_ENV = not os.environ.get("DISPLAY") and not os.environ.get("WAYLAND_DISPLAY")
+if HEADLESS_ENV:
+    matplotlib.use("Agg")
+
+import matplotlib.pyplot as plt
+
 from src.utils.io_utils import ROOT_PATH
+
+
+def view_binary_mask_3d(gt_mask, **batch):
+    assert gt_mask.ndim == 3, "Expected gt_mask shape (D, H, W)"
+
+    z_gradient = np.linspace(0.15, 0.85, gt_mask.shape[0])[:, None, None]
+    ignore = (gt_mask == 2)
+    gt_mask[ignore] = 0
+    gt_mask = gt_mask.astype(float) * z_gradient
+
+    viewer = napari.Viewer()
+
+    viewer.theme = 'light'
+
+    viewer.add_image(
+        gt_mask,
+        name='GT Mask',
+        colormap='magma',
+        rendering='attenuated_mip',
+        attenuation=0.5,
+        interpolation3d='nearest',
+        interpolation2d='nearest',
+        contrast_limits=[0, 1]
+    )
+
+    viewer.dims.ndisplay = 3
+    viewer.scale_bar.visible = True
+    viewer.scale_bar.unit = 'um'
+
+    napari.run()
+    return
+
+def view_binary_mask_batch_3d(gt_mask, **batch):
+    for i in range(gt_mask.shape[0]):
+        print(f"Viewing sample {i+1}/{gt_mask.shape[0]} in batch...")
+        view_binary_mask_3d(gt_mask[i], **batch)
+
 
 def view3d(volume, gt_mask, gt_skel, outputs=None, sample_idx=0, **batch):
     volume = volume[sample_idx].cpu().numpy()
     gt_mask = gt_mask[sample_idx].cpu().numpy()
     gt_skel = gt_skel[sample_idx].cpu().numpy()
     if outputs is not None:
-        outputs = outputs[sample_idx].cpu().numpy()
+        outputs = outputs[sample_idx].detach().cpu().numpy()
 
-    z_gradient = np.linspace(0, 1, volume.shape[0])[:, None, None]
+    z_gradient = np.linspace(0.15, 0.85, volume.shape[0])[:, None, None]
     gt_skel = gt_skel.astype(float) * z_gradient
     if outputs is not None:
         outputs = outputs.astype(float) * z_gradient
@@ -66,6 +107,7 @@ def view3d(volume, gt_mask, gt_skel, outputs=None, sample_idx=0, **batch):
     viewer.scale_bar.unit = 'um'
 
     napari.run()
+
 
 def view_batch_3d(volume, gt_mask, gt_skel, outputs=None, **batch):
     for i in range(volume.shape[0]):
