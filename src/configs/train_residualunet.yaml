@@ -1,26 +1,15 @@
 defaults:
-  - model: nnunet
+  - model: residualunet
   - writer: wandb
   - metrics: main
   - datasets: default
   - dataloader: default
-  - batch_transforms: without_cutout
+  - batch_transforms: main
   - instance_transforms: main
   - loss: nnunet_ce_dice_fp_skel_loss
   - optimizer: adamw
   - lr_scheduler: warmup_cosine
   - _self_
-
-model:
-  roi_size: [224, 224, 224]
-
-instance_transforms:
-  train:
-    crop:
-      size: [224, 224, 224]
-
-dataloader:
-  batch_size: 2
 
 trainer:
   log_step: 10
