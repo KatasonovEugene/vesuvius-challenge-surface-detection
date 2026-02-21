@@ -14,7 +14,14 @@ class BaseLoss(nn.Module):
         skel_weight=0.0,
         fp_weight=0.0,
         tversky_weight=0.0,
+        betti_weight=0.0,
+        hutopo_weight=0.0,
         eps=1e-7,
+        topo_filtration_type="superlevel",
+        topo_num_processes=1,
+        topo_include_background=False,
+        topo_ignore_index=2,
+        topo_reduction="mean",
         cld_calc_gt_skel=False,
         cld_smooth_pred_skel=False,
         cld_smooth_mask_skel=False,
@@ -84,6 +91,23 @@ class BaseLoss(nn.Module):
             eps=eps
         )
 
+        self.betti_loss = BettiMatchingLoss(
+            num_classes=num_classes,
+            filtration_type=topo_filtration_type,
+            num_processes=topo_num_processes,
+            include_background=topo_include_background,
+            ignore_index=topo_ignore_index,
+            reduction=topo_reduction,
+        )
+        self.hutopo_loss = HutopoLoss(
+            num_classes=num_classes,
+            filtration_type=topo_filtration_type,
+            num_processes=topo_num_processes,
+            include_background=topo_include_background,
+            ignore_index=topo_ignore_index,
+            reduction=topo_reduction,
+        )
+
         self.losses = {
             "ce_loss": (ce_weight, self.ce_loss),
             "cld_loss": (cld_weight, self.cld_loss),
@@ -91,6 +115,8 @@ class BaseLoss(nn.Module):
             "skel_loss": (skel_weight, self.skel_loss),
             "fp_loss": (fp_weight, self.fp_loss),
             "tversky_loss": (tversky_weight, self.tversky_loss),
+            "betti_loss": (betti_weight, self.betti_loss),
+            "hutopo_loss": (hutopo_weight, self.hutopo_loss),
         }
         self.names = []
         for loss_name, (loss_weight, _) in self.losses.items():
