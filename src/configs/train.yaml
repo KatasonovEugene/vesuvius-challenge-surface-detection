@@ -1,5 +1,5 @@
 defaults:
-  - model: nnunet
+  - model: residualunet
   - writer: wandb
   - metrics: main
   - datasets: default

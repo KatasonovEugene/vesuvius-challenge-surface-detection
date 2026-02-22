@@ -11,6 +11,14 @@ defaults:
   - lr_scheduler: warmup_cosine
   - _self_
 
+model:
+  roi_size: [192, 192, 192]
+
+instance_transforms:
+  train:
+    crop:
+      size: [192, 192, 192]
+
 trainer:
   log_step: 10
   n_epochs: 50
