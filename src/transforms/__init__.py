@@ -4,7 +4,7 @@ from src.transforms.rotate import RandRotate90_3D, Rotate90_3D, RandInstanceSmal
 from src.transforms.flip import RandFlip3D, Flip3D
 from src.transforms.shift_intensity import RandShiftIntensity3D, RandZIntensityDrift3D
 from src.transforms.crop import RandSpatialCrop3D, HighSumCrop3D
-from src.transforms.post_process import PostProcess, DistanceTransformPostProcess
+from src.transforms.post_process import PostProcess, DistanceTransformPostProcess, Threshold
 from src.transforms.smart_post_process import SmartPostProcess
 from src.transforms.cutout import Cutout3D
 from src.transforms.skeletonize import Skeletonize, MedialSurface

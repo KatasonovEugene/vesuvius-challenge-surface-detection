@@ -146,3 +146,24 @@ class DistanceTransformPostProcess(nn.Module):
             result = result.squeeze(0)
 
         return {'outputs': result}
+
+
+class Threshold(nn.Module):
+    def __init__(
+        self,
+        threshold=0.50,
+    ):
+        super().__init__()
+
+        self.threshold = threshold
+
+    def forward(self, outputs, **batch):
+        """
+        Args:
+            outputs (Tensor): tensor containing probabilities [0, 1] of class 1
+        Returns:
+            outputs (Tensor): post processed tensor
+        """
+
+        result = (outputs >= self.threshold).to(torch.uint8)
+        return {'outputs': result}

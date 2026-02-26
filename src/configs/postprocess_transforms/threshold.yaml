@@ -1,0 +1,3 @@
+outputs:
+  _target_: src.transforms.Threshold
+  threshold: 0.5
