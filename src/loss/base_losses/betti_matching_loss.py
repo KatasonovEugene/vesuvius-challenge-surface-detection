@@ -37,28 +37,28 @@ class BettiMatchingLoss(nn.Module):
 		self.ignore_index = ignore_index
 		self.reduction = reduction
 
-		try:
-			from topolosses.losses.betti_matching import BettiMatchingLoss as _BettiMatchingLoss
-		except ModuleNotFoundError as exc:
-			raise ModuleNotFoundError(
-				"Missing dependency 'topolosses'. Install it (e.g. `pip install topolosses`) "
-				"or disable BettiMatchingLoss in the config."
-			) from exc
+		# try:
+		# 	from topolosses.losses.betti_matching import BettiMatchingLoss as _BettiMatchingLoss
+		# except ModuleNotFoundError as exc:
+		# 	raise ModuleNotFoundError(
+		# 		"Missing dependency 'topolosses'. Install it (e.g. `pip install topolosses`) "
+		# 		"or disable BettiMatchingLoss in the config."
+		# 	) from exc
 
-		# Use only the topology-aware component; base loss is handled elsewhere in this repo.
-		self._loss_2d = _BettiMatchingLoss(
-			filtration_type=filtration_type,
-			num_processes=num_processes,
-			include_background=include_background,
-			sphere=sphere,
-			topology_weights=topology_weights,
-			barcode_length_threshold=barcode_length_threshold,
-			push_unmatched_to_1_0=push_unmatched_to_1_0,
-			use_base_loss=False,
-			alpha=1.0,
-			softmax=False,
-			sigmoid=False,
-		)
+		# # Use only the topology-aware component; base loss is handled elsewhere in this repo.
+		# self._loss_2d = _BettiMatchingLoss(
+		# 	filtration_type=filtration_type,
+		# 	num_processes=num_processes,
+		# 	include_background=include_background,
+		# 	sphere=sphere,
+		# 	topology_weights=topology_weights,
+		# 	barcode_length_threshold=barcode_length_threshold,
+		# 	push_unmatched_to_1_0=push_unmatched_to_1_0,
+		# 	use_base_loss=False,
+		# 	alpha=1.0,
+		# 	softmax=False,
+		# 	sigmoid=False,
+		# )
 
 	def _one_hot_target(self, gt_slice: torch.Tensor) -> torch.Tensor:
 		# gt_slice: (B, H, W)

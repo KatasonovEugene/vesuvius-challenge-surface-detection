@@ -28,23 +28,23 @@ class HutopoLoss(nn.Module):
 		self.ignore_index = ignore_index
 		self.reduction = reduction
 
-		try:
-			from topolosses.losses.hutopo import HutopoLoss as _HutopoLoss
-		except ModuleNotFoundError as exc:
-			raise ModuleNotFoundError(
-				"Missing dependency 'topolosses'. Install it (e.g. `pip install topolosses`) "
-				"or disable HutopoLoss in the config."
-			) from exc
+		# try:
+		# 	from topolosses.losses.hutopo import HutopoLoss as _HutopoLoss
+		# except ModuleNotFoundError as exc:
+		# 	raise ModuleNotFoundError(
+		# 		"Missing dependency 'topolosses'. Install it (e.g. `pip install topolosses`) "
+		# 		"or disable HutopoLoss in the config."
+		# 	) from exc
 
-		self._loss_2d = _HutopoLoss(
-			filtration_type=filtration_type,
-			num_processes=num_processes,
-			include_background=include_background,
-			use_base_loss=False,
-			alpha=1.0,
-			softmax=False,
-			sigmoid=False,
-		)
+		# self._loss_2d = _HutopoLoss(
+		# 	filtration_type=filtration_type,
+		# 	num_processes=num_processes,
+		# 	include_background=include_background,
+		# 	use_base_loss=False,
+		# 	alpha=1.0,
+		# 	softmax=False,
+		# 	sigmoid=False,
+		# )
 
 	def _one_hot_target(self, gt_slice: torch.Tensor) -> torch.Tensor:
 		if self.ignore_index is not None:

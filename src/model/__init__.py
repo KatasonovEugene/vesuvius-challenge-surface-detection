@@ -7,3 +7,4 @@ from src.model.compile_wrapper import CompileWrapper
 from src.model.nnunet import nnUNetDetector
 from src.model.ensemble import Ensemble
 from src.model.residual_unet import ResidualUNetDetector
+from src.model.fpn import FPNDetector

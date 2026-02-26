@@ -3,7 +3,7 @@ from pathlib import Path
 
 import matplotlib
 import numpy as np
-import napari
+# import napari
 
 HEADLESS_ENV = not os.environ.get("DISPLAY") and not os.environ.get("WAYLAND_DISPLAY")
 if HEADLESS_ENV:
