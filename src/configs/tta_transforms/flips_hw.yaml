@@ -1,0 +1,6 @@
+flip1:
+  _target_: src.transforms.Flip3D
+  spatial_axis: 1 # H
+flip2:
+  _target_: src.transforms.Flip3D
+  spatial_axis: 2 # W
