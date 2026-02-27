@@ -7,7 +7,7 @@ import copy
 
 from src.metrics.tracker import MetricTracker
 from src.trainer.base_trainer import BaseTrainer
-from src.model import Ensemble
+from src.model.model_utils import get_wrapped_ensemble, is_wrapped_ensemble
 from src.utils.plot_utils import plot_results
 
 class Inferencer(BaseTrainer):
@@ -54,17 +54,17 @@ class Inferencer(BaseTrainer):
                 the model desirable weights are defined outside of the
                 Inferencer Class.
         """
-        assert (
-            skip_model_load or config.inferencer.get("from_pretrained") is not None
-        ), "Provide checkpoint or set skip_model_load=True"
+        self.model = model
+        self.is_ensemble = is_wrapped_ensemble(self.model)
+        if not skip_model_load and config.inferencer.get("from_pretrained") is None:
+            ensemble = get_wrapped_ensemble(self.model)
+            if ensemble is None or not getattr(ensemble, "weights_paths", None):
+                raise AssertionError("Provide checkpoint or set skip_model_load=True")
 
         self.config = config
         self.cfg_trainer = self.config.inferencer
 
         self.device = device
-
-        self.model = model
-        self.is_ensemble = isinstance(self.model.get_inner_model(), Ensemble)
 
         self.batch_transforms = batch_transforms
         self.tta_transforms = tta_transforms
@@ -131,6 +131,8 @@ class Inferencer(BaseTrainer):
             outputs = self.model(**batch)
         batch.update(outputs)
 
+        pred_key = "probs" if "probs" in outputs else "logits"
+
         if self.tta_transforms:
             samples_num = 1
             for transform_name in self.tta_transforms.keys():
@@ -146,18 +148,12 @@ class Inferencer(BaseTrainer):
                 real_logits = self.tta_transforms[transform_name].detransform(**batch_copy)
                 batch_copy.update(real_logits)
 
-                if self.is_ensemble:
-                    batch['probs'] += batch_copy['probs']
-                else:
-                    batch['logits'] += batch_copy['logits']
+                batch[pred_key] += batch_copy[pred_key]
                 samples_num += 1
 
-            if self.is_ensemble:
-                batch['probs'] /= samples_num
-            else:
-                batch['logits'] /= samples_num
+            batch[pred_key] /= samples_num
 
-        if self.is_ensemble:
+        if pred_key == "probs":
             batch['outputs'] = batch['probs'][:, 1]
         else:
             batch['outputs'] = F.softmax(batch['logits'], dim=1)[:, 1]

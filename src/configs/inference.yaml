@@ -14,4 +14,4 @@ inferencer:
   seed: 1
   use_amp: False
   amp_dtype: "bfloat16"
-  from_pretrained: "models/pseudotarget07.pth"
+  from_pretrained: null

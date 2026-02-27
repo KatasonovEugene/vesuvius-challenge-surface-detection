@@ -9,7 +9,7 @@ from tqdm.auto import tqdm
 from src.datasets.data_utils import inf_loop
 from src.metrics.tracker import MetricTracker
 from src.utils.io_utils import ROOT_PATH
-from src.model import Ensemble
+from src.model.model_utils import get_wrapped_ensemble, is_wrapped_ensemble
 
 
 class BaseTrainer:
@@ -69,7 +69,7 @@ class BaseTrainer:
         self.log_step = config.trainer.get("log_step", 50)
 
         self.model = model
-        self.is_ensemble = isinstance(self.model.get_inner_model(), Ensemble)
+        self.is_ensemble = is_wrapped_ensemble(self.model)
 
         self.criterion = criterion
         self.optimizer = optimizer
@@ -569,7 +569,34 @@ class BaseTrainer:
 
     def _from_pretrained(self, pretrained_paths):
         if self.is_ensemble:
+            ensemble = get_wrapped_ensemble(self.model)
+            if ensemble is not None and getattr(ensemble, "weights_paths", None):
+                if pretrained_paths is None or isinstance(pretrained_paths, str):
+                    pretrained_paths = ensemble.weights_paths
+
+        if pretrained_paths is None:
+            return
+
+        if self.is_ensemble:
+            ensemble = get_wrapped_ensemble(self.model)
+            if ensemble is None:
+                raise RuntimeError("is_ensemble=True but could not unwrap Ensemble instance")
+
+            if isinstance(pretrained_paths, str):
+                pretrained_paths = [pretrained_paths]
+
+            if len(pretrained_paths) != len(ensemble):
+                raise ValueError(
+                    f"Ensemble has {len(ensemble)} models, but got {len(pretrained_paths)} weight paths"
+                )
+
             for idx, pretrained_path in enumerate(pretrained_paths):
-                self._load_one_pretrained(pretrained_path, self.model.get_ensemble_model(idx))
+                self._load_one_pretrained(pretrained_path, ensemble.get_ensemble_model(idx))
         else:
+            if isinstance(pretrained_paths, (list, tuple)):
+                if len(pretrained_paths) != 1:
+                    raise ValueError(
+                        f"Single model expects one checkpoint path, got {len(pretrained_paths)}"
+                    )
+                pretrained_paths = pretrained_paths[0]
             self._load_one_pretrained(pretrained_paths, self.model)

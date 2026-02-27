@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 from monai.inferers.utils import sliding_window_inference
-from src.model.ensemble import Ensemble
+
+from src.model.model_utils import get_wrapped_ensemble, is_wrapped_ensemble
 
 
 class SlidingWindowWrapper(nn.Module):
@@ -11,7 +12,8 @@ class SlidingWindowWrapper(nn.Module):
         roi_size,
         sw_batch_size=1,
         overlap=0.5,
-        mode='gaussian'
+        mode='gaussian',
+        output_key=None,
     ):
         super().__init__()
         self.model = model
@@ -19,16 +21,26 @@ class SlidingWindowWrapper(nn.Module):
         self.sw_batch_size = sw_batch_size
         self.overlap = overlap
         self.mode = mode
-        self.is_ensemble = isinstance(self.model, Ensemble)
+        self.is_ensemble = is_wrapped_ensemble(self.model)
+
+        if output_key is None:
+            if self.is_ensemble:
+                ensemble = get_wrapped_ensemble(self.model)
+                if ensemble is not None and getattr(ensemble, "ensemble_type", "probs") == "logits":
+                    self.output_key = "logits"
+                else:
+                    self.output_key = "probs"
+            else:
+                self.output_key = "logits"
+        else:
+            self.output_key = str(output_key)
 
     def get_inner_model(self):
         return self.model
 
     def _predictor(self, volume):
         preds = self.model(volume=volume.squeeze(1))
-        if self.is_ensemble:
-            return preds['probs']
-        return preds['logits']
+        return preds[self.output_key]
 
     def forward(self, **batch):
         if self.training:
@@ -43,10 +55,7 @@ class SlidingWindowWrapper(nn.Module):
                     overlap=self.overlap,
                     mode=self.mode
                 )
-                if self.is_ensemble:
-                    return {'probs': preds, 'outputs': None}
-                else:
-                    return {'logits': preds, 'outputs': None}
+                return {self.output_key: preds, 'outputs': None}
 
     def state_dict(self, *args, **kwargs):
         return self.model.state_dict(*args, **kwargs)

@@ -10,6 +10,7 @@ from src.trainer import Inferencer
 from src.utils.init_utils import set_random_seed
 from src.utils.io_utils import ROOT_PATH
 from src.model import Ensemble, SlidingWindowWrapper
+from src.model.model_utils import get_wrapped_ensemble
 
 import zipfile
 import os
@@ -51,9 +52,17 @@ def main(config):
 
     assert hasattr(model, "get_inner_model")
     is_kaggle_env = 'KAGGLE_URL_BASE' in os.environ
+
     from_pretrained_paths = config.inferencer.from_pretrained
+    ensemble = get_wrapped_ensemble(model)
+    if ensemble is not None and getattr(ensemble, "weights_paths", None):
+        if from_pretrained_paths is None or isinstance(from_pretrained_paths, str):
+            from_pretrained_paths = ensemble.weights_paths
+
     if isinstance(from_pretrained_paths, str):
         run_name = Path(from_pretrained_paths).stem
+    elif from_pretrained_paths is None:
+        run_name = "inference"
     else:
         run_name = '_'.join([Path(path).stem for path in from_pretrained_paths])
 
