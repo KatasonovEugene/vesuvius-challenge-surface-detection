@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from monai.inferers.utils import sliding_window_inference
 
-from src.model.model_utils import get_wrapped_ensemble, is_wrapped_ensemble
+from src.utils.model_utils import get_wrapped_ensemble, is_wrapped_ensemble
 
 
 class SlidingWindowWrapper(nn.Module):

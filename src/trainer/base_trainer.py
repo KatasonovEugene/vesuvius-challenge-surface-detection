@@ -9,7 +9,7 @@ from tqdm.auto import tqdm
 from src.datasets.data_utils import inf_loop
 from src.metrics.tracker import MetricTracker
 from src.utils.io_utils import ROOT_PATH
-from src.model.model_utils import get_wrapped_ensemble, is_wrapped_ensemble
+from src.utils.model_utils import get_wrapped_ensemble, is_wrapped_ensemble
 
 
 class BaseTrainer:

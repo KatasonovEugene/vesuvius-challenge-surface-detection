@@ -10,7 +10,7 @@ from src.trainer import Inferencer
 from src.utils.init_utils import set_random_seed
 from src.utils.io_utils import ROOT_PATH
 from src.model import Ensemble, SlidingWindowWrapper
-from src.model.model_utils import get_wrapped_ensemble
+from src.utils.model_utils import get_wrapped_ensemble
 
 import zipfile
 import os

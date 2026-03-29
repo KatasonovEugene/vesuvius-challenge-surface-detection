@@ -7,7 +7,7 @@ import copy
 
 from src.metrics.tracker import MetricTracker
 from src.trainer.base_trainer import BaseTrainer
-from src.model.model_utils import get_wrapped_ensemble, is_wrapped_ensemble
+from src.utils.model_utils import get_wrapped_ensemble, is_wrapped_ensemble
 from src.utils.plot_utils import plot_results
 
 class Inferencer(BaseTrainer):

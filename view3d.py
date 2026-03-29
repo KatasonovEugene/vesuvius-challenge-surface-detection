@@ -10,11 +10,9 @@ from src.utils.init_utils import set_random_seed
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
-#========= I DONT KNOW HOW TO ADD CONFIGS TO THIS (OR CLI) ==================
 
 INPUT_PATH = 'data/train_labels'  # Change this to your desired path
 
-#============================================================================
 
 import io
 import sys
